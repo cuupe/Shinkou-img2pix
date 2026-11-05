@@ -169,10 +169,10 @@ GPU 后端在处理 Worker 内使用 WGSL 计算着色器。并行阶段与顺�
 
 $$
 s=\min\left(1,\frac{N}{\max(W,H)}\right),\qquad
-(w,h)=\left(\max(1,\operatorname{round}(sW)),\max(1,\operatorname{round}(sH))\right).
+(w,h)=\left(\max(1,\mathrm{round}(sW)),\max(1,\mathrm{round}(sH))\right).
 $$
 
-结构保真使用更高分辨率的分析图：$q=\min(8,2048/\max(w,h))$，分析宽高为 $\min(W,\operatorname{round}(qw))$、$\min(H,\operatorname{round}(qh))$。先分析细线与色块，再映射到最终网格。
+结构保真使用更高分辨率的分析图：$q=\min(8,2048/\max(w,h))$，分析宽高为 $\min(W,\mathrm{round}(qw))$、$\min(H,\mathrm{round}(qh))$。先分析细线与色块，再映射到最终网格。
 
 ### 1. 线性光面积采样
 
@@ -200,10 +200,10 @@ $$
 亮度、对比度、饱和度参数分别记为 $b,k,t$，亮度参考值 $Y=0.2126C_R+0.7152C_G+0.0722C_B$。每个通道调整为：
 
 $$
-C'_r=\operatorname{clip}_{[0,255]}\left(\left[Y+(C_r-Y)(1+t/100)-127.5\right](1+k/100)^2+127.5+2.55b\right).
+C'_r=\mathrm{clip}_{[0,255]}\left(\left[Y+(C_r-Y)(1+t/100)-127.5\right](1+k/100)^2+127.5+2.55b\right).
 $$
 
-照片模式的细节增强先计算 $C_r\leftarrow\operatorname{clip}(C_r+0.45(C_r-\mu_{4,r}))$，其中 $\mu_4$ 为有效不透明四邻域的均值。结构保真不使用该锐化，细节由下述特征与区域规则处理。
+照片模式的细节增强先计算 $C_r\leftarrow\mathrm{clip}(C_r+0.45(C_r-\mu_{4,r}))$，其中 $\mu_4$ 为有效不透明四邻域的均值。结构保真不使用该锐化，细节由下述特征与区域规则处理。
 
 ### 3. 细线响应与区域一致性
 
@@ -223,7 +223,7 @@ $$
 
 ### 4. 感知色板与颜色匹配
 
-自适应色板先按每通道 5 位建立颜色直方图。设过渡色保留参数 $\rho=\operatorname{clip}_{[0,1]}(\text{retention}/100)$，每个分析像素的直方图权重为：
+自适应色板先按每通道 5 位建立颜色直方图。设过渡色保留参数 $\rho=\mathrm{clip}_{[0,1]}(\text{retention}/100)$，每个分析像素的直方图权重为：
 
 $$
 w_p=\left\{0.015+0.985\left[\rho^2+(1-\rho^2)S_p^{4-2\rho}\right]\right\}(1+4I_p).
@@ -232,8 +232,8 @@ $$
 在 Oklab 最大加权方差轴上按权重中位数递归划分，直到达到颜色预算或无法继续分裂。随后执行两轮加权 Lloyd 优化：
 
 $$
-k(p)=\arg\min_k\|\operatorname{Lab}(C_p)-\operatorname{Lab}(P_k)\|_2^2,\qquad
-P_k\leftarrow\operatorname{round}\frac{\sum_{p:k(p)=k}w_pC_p}{\sum_{p:k(p)=k}w_p}.
+k(p)=\arg\min_k\|\mathrm{Lab}(C_p)-\mathrm{Lab}(P_k)\|_2^2,\qquad
+P_k\leftarrow\mathrm{round}\frac{\sum_{p:k(p)=k}w_pC_p}{\sum_{p:k(p)=k}w_p}.
 $$
 
 这里 $p$ 表示直方图条目，$w_p$ 为该条目累计权重，$C_p$ 为其加权 RGB 均值；空簇保持原值。设置保留量为 0 时，再将簇均值吸附到实际输入代表色；足够受支持的近黑描边与近白高光另作保留。固定色板直接使用预设颜色。
@@ -250,7 +250,7 @@ $$
 $$
 
 $$
-\operatorname{Lab}(C)=
+\mathrm{Lab}(C)=
 \begin{pmatrix}
 0.2104542553&0.7936177850&-0.0040720468\\
 1.9779984951&-2.4285922050&0.4505937099\\
@@ -282,7 +282,7 @@ $$
 
 ### 6. 区域到像素格的映射
 
-对最终格子 $j$ 和颜色区域 $k$，令 $f_{jk}$ 为有效覆盖中的面积比例，$g_{jk}$ 为按 $\exp[-5(\Delta x^2+\Delta y^2)]$ 加权并归一化的中心占比，$M_{jk}$ 与 $\bar I_{jk}$ 分别为该区域在格子内的最大、面积加权平均重要度。线条保护强度 $\eta=\operatorname{clip}_{[0,1]}(\text{lineProtection}/100)$。区域得分为：
+对最终格子 $j$ 和颜色区域 $k$，令 $f_{jk}$ 为有效覆盖中的面积比例，$g_{jk}$ 为按 $\exp[-5(\Delta x^2+\Delta y^2)]$ 加权并归一化的中心占比，$M_{jk}$ 与 $\bar I_{jk}$ 分别为该区域在格子内的最大、面积加权平均重要度。线条保护强度 $\eta=\mathrm{clip}_{[0,1]}(\text{lineProtection}/100)$。区域得分为：
 
 $$
 T_{jk}=0.85f_{jk}+0.15g_{jk}+1.8\eta\sqrt{0.25M_{jk}+0.75\bar I_{jk}}(1-f_{jk})\min\left(1,\frac{f_{jk}}{0.18}\right).
