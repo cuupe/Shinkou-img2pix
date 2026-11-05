@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "appVersion": "0.4.0",
+  "sources": [
+    {
+      "path": "public/illustration.png",
+      "sha256": "8b74e23ae5b3c491d55018984df16deea4fbea5d47dd6b2ec6fda32035964bf8",
+      "provenance": "AI-generated demonstration input bundled with the project"
+    },
+    {
+      "path": "public/lighthouse.png",
+      "sha256": "a417b7f57a1ecc356954a29a259e7a349c1c6eb4ebb54e4f7510b9dd95cd0dfb",
+      "provenance": "AI-generated demonstration input bundled with the project"
+    }
+  ],
+  "examples": [
+    {
+      "source": "public/illustration.png",
+      "output": "docs/images/illustration-128.png",
+      "width": 128,
+      "height": 128,
+      "paletteColors": 32,
+      "settings": {
+        "method": "structure",
+        "lineProtection": 75,
+        "edgeSmoothing": 65,
+        "transitionRetention": 25,
+        "cleanup": 45,
+        "size": 128,
+        "colors": 32,
+        "palette": "adaptive",
+        "brightness": 0,
+        "contrast": 0,
+        "saturation": 0,
+        "detail": true,
+        "dither": "none",
+        "ditherAmount": 45,
+        "transparent": true
+      }
+    },
+    {
+      "source": "public/illustration.png",
+      "output": "docs/images/illustration-256.png",
+      "width": 256,
+      "height": 256,
+      "paletteColors": 32,
+      "settings": {
+        "method": "structure",
+        "lineProtection": 75,
+        "edgeSmoothing": 65,
+        "transitionRetention": 25,
+        "cleanup": 45,
+        "size": 256,
+        "colors": 32,
+        "palette": "adaptive",
+        "brightness": 0,
+        "contrast": 0,
+        "saturation": 0,
+        "detail": true,
+        "dither": "none",
+        "ditherAmount": 45,
+        "transparent": true
+      }
+    },
+    {
+      "source": "public/illustration.png",
+      "output": "docs/images/illustration-retention-0.png",
+      "width": 128,
+      "height": 128,
+      "paletteColors": 32,
+      "settings": {
+        "method": "structure",
+        "lineProtection": 75,
+        "edgeSmoothing": 65,
+        "transitionRetention": 0,
+        "cleanup": 45,
+        "size": 128,
+        "colors": 32,
+        "palette": "adaptive",
+        "brightness": 0,
+        "contrast": 0,
+        "saturation": 0,
+        "detail": true,
+        "dither": "none",
+        "ditherAmount": 45,
+        "transparent": true
+      }
+    },
+    {
+      "source": "public/illustration.png",
+      "output": "docs/images/illustration-retention-100.png",
+      "width": 128,
+      "height": 128,
+      "paletteColors": 32,
+      "settings": {
+        "method": "structure",
+        "lineProtection": 75,
+        "edgeSmoothing": 65,
+        "transitionRetention": 100,
+        "cleanup": 45,
+        "size": 128,
+        "colors": 32,
+        "palette": "adaptive",
+        "brightness": 0,
+        "contrast": 0,
+        "saturation": 0,
+        "detail": true,
+        "dither": "none",
+        "ditherAmount": 45,
+        "transparent": true
+      }
+    },
+    {
+      "source": "public/lighthouse.png",
+      "output": "docs/images/landscape-128.png",
+      "width": 128,
+      "height": 96,
+      "paletteColors": 32,
+      "settings": {
+        "method": "sample",
+        "lineProtection": 75,
+        "edgeSmoothing": 65,
+        "transitionRetention": 25,
+        "cleanup": 45,
+        "size": 128,
+        "colors": 32,
+        "palette": "adaptive",
+        "brightness": 0,
+        "contrast": 0,
+        "saturation": 0,
+        "detail": true,
+        "dither": "floyd",
+        "ditherAmount": 35,
+        "transparent": true
+      }
+    }
+  ],
+  "presentation": "Outputs are unmodified algorithm results; comparison panels use integer nearest-neighbor enlargement. Source panels are resized for display."
+}

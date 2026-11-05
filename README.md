@@ -4,6 +4,36 @@ Shinkou Pixel 是一款基于 Tauri 的图片转像素画桌面应用，主要�
 
 所有图像处理均在本机完成。当前主要支持 Windows。
 
+## 效果示例
+
+示例原图为项目内置的 AI 生成演示素材，像素结果由当前程序直接计算，未进行人工修图。对比图中的结果使用最近邻整数倍放大展示，原图仅作缩放预览。
+
+### 插画转换
+
+![原图与 128、256 像素结构保真结果对比](docs/images/illustration-comparison.png)
+
+结构保真模式，自适应 32 色；过渡色保留 25、线条保护 75、轮廓规整 65、碎点合并 45。两种输出尺寸使用相同的其余参数。
+
+[示例原图](public/illustration.png) · [128 × 128 原尺寸结果](docs/images/illustration-128.png) · [256 × 256 原尺寸结果](docs/images/illustration-256.png)
+
+### 过渡色保留
+
+![过渡色保留 0、25、100 的同参数对比](docs/images/transition-comparison.png)
+
+相同原图、128 × 128、自适应 32 色，仅改变过渡色保留。0 更偏向主体色，25 为默认值，100 关闭过渡归并；这项设置不改变总色数上限。
+
+[保留量 0](docs/images/illustration-retention-0.png) · [保留量 25](docs/images/illustration-128.png) · [保留量 100](docs/images/illustration-retention-100.png)
+
+### 风景转换
+
+![风景原图与 128 × 96 像素转换结果对比](docs/images/landscape-comparison.png)
+
+照片采样模式，128 × 96、自适应 32 色；使用 Floyd–Steinberg 误差扩散，抖动强度 35，开启细节增强。
+
+[示例原图](public/lighthouse.png) · [128 × 96 原尺寸结果](docs/images/landscape-128.png)
+
+所有示例的完整参数与输入文件校验值见 [示例清单](docs/examples.json)。
+
 ## 功能概览
 
 | 功能 | 说明 |
@@ -140,6 +170,16 @@ cargo check --manifest-path src-tauri/Cargo.toml
 
 算法测试覆盖采样、细线保留、局部颜色归属、轮廓连接保护、过渡色配置、色板约束和透明度处理。
 
+### 生成文档示例
+
+```powershell
+npm run docs:examples
+```
+
+脚本直接调用当前图像算法，使用 `public/` 中的示例原图生成对比图、原尺寸结果和 `docs/examples.json` 参数清单。
+
+生成脚本通过 Playwright 运行，Windows 默认使用 Microsoft Edge，其他平台使用 Playwright Chromium。也可通过 `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` 指定浏览器路径。此要求仅用于生成文档图片。
+
 ## 技术结构
 
 桌面外壳使用 **Tauri 2 / Rust**，界面使用 **React 19 / TypeScript / Vite**。图像转换与预设缩略图由独立 Web Worker 处理。
@@ -152,5 +192,7 @@ src/
   lib/image.ts    图像解码、原生文件操作与导出
 src-tauri/        Rust 入口、桌面配置、权限与图标
 public/           示例图片与静态资源
+docs/             效果示例、原尺寸结果与参数清单
+scripts/          文档图片生成脚本
 design/           算法设计与界面参考资料
 ```
