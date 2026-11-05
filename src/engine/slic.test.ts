@@ -58,7 +58,7 @@ describe('SLIC region cleanup', () => {
     }
   });
   it('is deterministic and integrates without changing dimensions, alpha or color budget', () => {
-    const source = { data: fixture(), width: 48, height: 32 }, settings = { ...DEFAULT_SETTINGS, size: 32, colors: 8, regionCleanup: 70 };
+    const source = { data: fixture(), width: 48, height: 32 }, settings = { ...DEFAULT_SETTINGS, lowResolution: 'source' as const, size: 32, colors: 8, regionCleanup: 70 };
     const a = pixelate(source, settings), b = pixelate(source, settings);
     expect(a.data).toEqual(b.data); expect([a.width, a.height]).toEqual([32, 21]); expect(a.palette.length).toBeLessThanOrEqual(8);
     for (let i = 3; i < a.data.length; i += 4) expect(a.data[i]).toBe(255);

@@ -5,6 +5,9 @@ import { regularizeBoundaries } from './boundaries';
 import { resolveTransitions } from './transitions';
 import type { FeatureMap } from './structure';
 import { cleanSuperpixels } from './slic';
+import { reconstruct } from './reconstruction';
+import { usesReconstruction } from './types';
+import type { SemanticFace } from './types';
 
 const clamp = (n: number, max = 255) => Math.max(0, Math.min(max, n));
 const linear = (v: number) => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
@@ -209,7 +212,7 @@ function quantize(data: Uint8ClampedArray, w: number, h: number, palette: RGB[],
   }
 }
 
-export interface PreparedImage { data: Uint8ClampedArray; features?: FeatureMap; aiImportance?: Float32Array }
+export interface PreparedImage { data: Uint8ClampedArray; features?: FeatureMap; aiImportance?: Float32Array; faces?: SemanticFace[] }
 export type PipelineStep =
   | { kind: 'prepare'; source: PixelSource; width: number; height: number; settings: Settings; withFeatures: boolean }
   | { kind: 'quantize'; data: Uint8ClampedArray; width: number; height: number; palette: RGB[]; settings: Settings };
@@ -237,7 +240,8 @@ function* pipeline(source: PixelSource, settings: Settings): Generator<PipelineS
     // Keep up to eight samples per cell: a 2–3 source-pixel ink line must not
     // already have turned gray before transition ownership is analyzed.
     // The 2048 edge cap keeps the analysis buffer at the previous memory ceiling.
-    const analysisScale = Math.min(8, 2048 / Math.max(width, height));
+    const rebuilding = usesReconstruction(source, settings);
+    const analysisScale = rebuilding ? 6 : Math.min(8, 2048 / Math.max(width, height));
     const workWidth = Math.min(source.width, Math.round(width * analysisScale)), workHeight = Math.min(source.height, Math.round(height * analysisScale));
     let t = performance.now();
     const prepared = (yield { kind: 'prepare', source, width: workWidth, height: workHeight, settings: { ...settings, detail: false }, withFeatures: true })!;
@@ -246,6 +250,7 @@ function* pipeline(source: PixelSource, settings: Settings): Generator<PipelineS
     const palette = measure('palette', () => settings.palette === 'adaptive'
       ? adaptivePalette(working, Math.max(2, Math.min(256, settings.colors)), features.importance, features.coherence, settings.transitionRetention ?? 25)
       : PALETTES[settings.palette]);
+    if (rebuilding) return result(measure('reconstruction', () => reconstruct(working, workWidth, workHeight, width, height, palette, settings, prepared.faces)), width, height, palette);
     // Neural guidance changes ownership/protection, never the extracted palette.
     if (prepared.aiImportance) features.importance = prepared.aiImportance;
     const originalWorking = working.slice();

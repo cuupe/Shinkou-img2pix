@@ -9,7 +9,7 @@ function fixture(w: number, h: number, pixel: (x: number, y: number) => number[]
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) data.set(pixel(x, y), (y * w + x) * 4);
   return { data, width: w, height: h };
 }
-const settings: Settings = { ...DEFAULT_SETTINGS, size: 32, colors: 8, brightness: 0, contrast: 0, saturation: 0, cleanup: 45 };
+const settings: Settings = { ...DEFAULT_SETTINGS, lowResolution: 'source', size: 32, colors: 8, brightness: 0, contrast: 0, saturation: 0, cleanup: 45 };
 describe('structure-preserving conversion', () => {
   it('keeps a sub-cell dark line dark instead of averaging it into a pale border', () => {
     const source = fixture(256, 128, x => x >= 9 && x < 12 ? [0, 0, 0, 255] : [255, 255, 255, 255]);

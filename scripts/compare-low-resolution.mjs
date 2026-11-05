@@ -6,7 +6,8 @@ import { chromium } from '@playwright/test';
 import { createServer } from 'vite';
 
 // Compare a model's native-resolution PNGs against the actual application.
-// This tool performs no model inference and downloads no models or images.
+// Candidate inference is external. The baseline runs the real app, including
+// its bundled facial model when applicable. Nothing is uploaded or downloaded.
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const options = { input: 'public/illustration.png', output: '.cache/low-resolution-comparison', label: 'Candidate' };
 for (let i = 2; i < process.argv.length; i += 2) {
@@ -33,6 +34,7 @@ if ([inputPath, ...Object.values(candidates).map(c => c.path)].some(path => writ
 const { version } = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
 const server = await createServer({
   root, configFile: false, cacheDir: 'node_modules/.vite-low-resolution', logLevel: 'error',
+  resolve: { conditions: ['onnxruntime-web-use-extern-wasm', 'module', 'browser', 'development|production'] },
   optimizeDeps: { noDiscovery: true, entries: [] },
   server: { host: '127.0.0.1', port: 0, watch: { ignored: ['**/.cache/**'] } },
 });
@@ -45,7 +47,8 @@ try {
   const page = await browser.newPage();
   await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/illustration.png`);
   const generated = await page.evaluate(async ({ sourceBase64, candidates, sizes, label }) => {
-    const { pixelate, executeCpuStep } = await import('/src/engine/pixelate.ts');
+    const { executeCpuStep } = await import('/src/engine/pixelate.ts');
+    const { pixelateAccelerated } = await import('/src/engine/backend.ts');
     const { DEFAULT_SETTINGS } = await import('/src/engine/types.ts');
     const canvas = (width, height, data) => {
       const c = document.createElement('canvas'); c.width = width; c.height = height;
@@ -63,10 +66,10 @@ try {
     const save = (name, c) => { assets[name] = c.toDataURL('image/png').split(',')[1]; };
     const settings = { ...DEFAULT_SETTINGS, backend: 'cpu', aiStrength: 0 };
     for (const size of [...sizes, 160]) {
-      const result = pixelate(source, { ...settings, size });
+      const result = await pixelateAccelerated(source, { ...settings, size });
       const baseline = canvas(result.width, result.height, result.data);
       save(size === 160 ? 'reference-160.png' : `baseline-${size}.png`, baseline);
-      const record = { width: result.width, height: result.height, settings: { ...settings, size }, baseline: { palette: result.palette, durationMs: result.duration } };
+      const record = { width: result.width, height: result.height, settings: { ...settings, size }, baseline: { palette: result.palette, durationMs: result.duration, execution: result.execution } };
       if (size === 160) { records.push(record); continue; }
       const panels = [{ canvas: source.canvas, original: true, label: 'Source (display preview)' }, { canvas: baseline, label: `Current / ${result.width} x ${result.height}` }];
       if (candidates[size]) {
@@ -77,6 +80,7 @@ try {
         // Never run line protection, topology cleanup or smoothing on model output.
         // Keep the raw prediction; also compare with the exact baseline palette.
         const data = candidate.data.slice();
+        if (!result.palette.length && data.some((v, i) => i % 4 === 3 && v > 0)) throw new Error('The source has no opaque palette; an opaque candidate cannot be remapped');
         const alpha = Array.from({ length: data.length / 4 }, (_, i) => data[i * 4 + 3]);
         if (alpha.some(a => a !== 0 && a !== 255)) throw new Error(`${size}.png contains partial alpha; supply a finalized pixel grid`);
         executeCpuStep({ kind: 'quantize', data, width: candidate.width, height: candidate.height, palette: result.palette, settings: { ...settings, dither: 'none' } });

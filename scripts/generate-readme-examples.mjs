@@ -12,6 +12,7 @@ await mkdir(output, { recursive: true });
 
 const server = await createServer({
   root, configFile: false, cacheDir: 'node_modules/.vite-docs-examples', logLevel: 'error',
+  resolve: { conditions: ['onnxruntime-web-use-extern-wasm', 'module', 'browser', 'development|production'] },
   optimizeDeps: { noDiscovery: true, entries: [] },
   server: { host: '127.0.0.1', port: 0, strictPort: false, watch: { ignored: ['**/.cache/**'] } },
 });
@@ -51,12 +52,12 @@ try {
       if (settings.aiStrength > 0 && result.execution.ai?.backend === 'none') throw new Error(result.execution.ai.reason);
       // Native-resolution output, suitable for inspection or reuse as a fixture.
       assets[filename] = canvas.toDataURL('image/png').split(',')[1];
-      records.push({ source: sourceName, output: `docs/images/${filename}`, width: result.width, height: result.height, paletteColors: result.palette.length, settings, ai: result.execution.ai ? { model: result.execution.ai.model, backend: result.execution.ai.backend } : undefined });
+      records.push({ source: sourceName, output: `docs/images/${filename}`, width: result.width, height: result.height, paletteColors: result.palette.length, settings, ai: result.execution.ai ? { model: result.execution.ai.model, backend: result.execution.ai.backend } : undefined, semantic: result.execution.semantic });
       if (result.execution.ai?.preview) assets['illustration-ai-edges.png'] = toCanvas(result.execution.ai.preview).toDataURL('image/png').split(',')[1];
       return canvas;
     };
-    const comparison = (filename, title, panels, caption) => {
-      const gutter = 32, gap = 24, panelWidth = 512;
+    const comparison = (filename, title, panels, caption, panelWidth = 512) => {
+      const gutter = 32, gap = 24;
       const panelHeight = Math.max(...panels.map(p => Math.round(p.canvas.height / p.canvas.width * panelWidth)));
       const figure = document.createElement('canvas');
       figure.width = gutter * 2 + panels.length * panelWidth + (panels.length - 1) * gap;
@@ -109,6 +110,28 @@ try {
       { canvas: illustration128, label: '0 · 基础算法' },
       { canvas: ai75, label: '75 · TEED 线条辅助' },
     ], '相同原图、128 × 128、32 色；保持相同色板，仅改变 AI 线条辅助强度。');
+
+    const low = {};
+    for (const size of [64, 48, 32]) {
+      const before = await convert(illustration, 'public/illustration.png', `illustration-source-${size}.png`, { size, lowResolution: 'source', semanticDetail: 0 });
+      const rebuilt = await convert(illustration, 'public/illustration.png', `illustration-reconstruct-${size}.png`, { size });
+      if (records[records.length - 1].semantic?.faces !== 1) throw new Error('Low-resolution example did not use the real facial model');
+      low[size] = rebuilt;
+      comparison(`low-resolution-${size}-comparison.png`, `低像素重构 · ${size} × ${size}`, [
+        { canvas: illustration.canvas, label: '原图', original: true },
+        { canvas: before, label: '线稿保真 · 原有处理' },
+        { canvas: rebuilt, label: '色块重构 · 五官保真 75' },
+      ], '相同原图与 32 色上限 · 新模式按网格重组色块 · 真实 HRNetV2 五官定位 · 未经人工修图', 384);
+    }
+    const outline0 = await convert(illustration, 'public/illustration.png', 'illustration-outline-0.png', { size: 64, outlineRetention: 0 });
+    const outline100 = await convert(illustration, 'public/illustration.png', 'illustration-outline-100.png', { size: 64, outlineRetention: 100 });
+    comparison('outline-retention-comparison.png', '描边保留 · 64 × 64', [
+      { canvas: outline0, label: '0 · 更弱的细窄描边' }, { canvas: low[64], label: '55 · 默认' }, { canvas: outline100, label: '100 · 保留原始线色' },
+    ], '固定 32 色上限、五官保真 75，其余参数相同；形状仍由色块重构处理。', 384);
+    const noSemantic = await convert(illustration, 'public/illustration.png', 'illustration-semantic-0.png', { size: 32, semanticDetail: 0 });
+    comparison('semantic-detail-comparison.png', '五官辅助 · 32 × 32', [
+      { canvas: noSemantic, label: '0 · 通用色块重构' }, { canvas: low[32], label: '75 · 五官辅助与高光预算' },
+    ], '同一张图、相同 32 色上限；启用五官辅助时可在色板预算内为真实高光重新分配颜色。', 384);
 
     const landscape = await input('lighthouse.png');
     const landscape128 = await convert(landscape, 'public/lighthouse.png', 'landscape-128.png', { method: 'sample', size: 128, dither: 'floyd', ditherAmount: 35 });

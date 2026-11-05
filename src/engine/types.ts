@@ -9,6 +9,9 @@ export interface Settings {
   transitionRetention: number;
   regionCleanup: number;
   aiStrength: number;
+  lowResolution: 'reconstruct' | 'source';
+  outlineRetention: number;
+  semanticDetail: number;
   cleanup: number;
   size: number;
   colors: number;
@@ -22,6 +25,7 @@ export interface Settings {
   transparent: boolean;
 }
 export interface PixelSource { data: Uint8ClampedArray; width: number; height: number }
+export interface SemanticFace { points: [number, number, number][]; box: [number, number, number, number]; highlights?: [number, number][]; highlightColors?: RGB[] }
 export interface ExecutionInfo {
   backend: 'gpu' | 'cpu';
   device?: string;
@@ -29,6 +33,7 @@ export interface ExecutionInfo {
   gpuStages: string[];
   timings: Record<string, number>;
   ai?: { backend: 'webgpu' | 'wasm' | 'none'; model: string; duration: number; cached: boolean; reason?: string; device?: string; preview?: PixelSource };
+  semantic?: { backend: 'webgpu' | 'wasm' | 'none'; model: string; faces: number; duration: number; cached: boolean; reason?: string; device?: string };
 }
 export interface PixelResult extends PixelSource { palette: RGB[]; duration: number; execution: ExecutionInfo }
 export interface WorkerRequest { id: number; source?: PixelSource; settings: Settings; keepAll?: boolean }
@@ -36,6 +41,10 @@ export interface WorkerResponse { id: number; result?: PixelResult; error?: stri
 export const DEFAULT_SETTINGS: Settings = {
   backend: 'auto',
   method: 'structure', lineProtection: 75, edgeSmoothing: 65, transitionRetention: 25, regionCleanup: 0, aiStrength: 0, cleanup: 45,
+  lowResolution: 'reconstruct', outlineRetention: 55, semanticDetail: 75,
   size: 160, colors: 32, palette: 'adaptive', brightness: 0, contrast: 0,
   saturation: 0, detail: true, dither: 'none', ditherAmount: 45, transparent: true,
 };
+export function usesReconstruction(source: PixelSource, settings: Settings) {
+  return settings.method === 'structure' && settings.lowResolution !== 'source' && settings.size <= 64 && Math.max(source.width, source.height) > settings.size * 1.25;
+}

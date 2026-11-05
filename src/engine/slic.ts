@@ -3,7 +3,7 @@ import type { RGB } from './types';
 
 const LINEAR = Float32Array.from({ length: 256 }, (_, i) => { const v = i / 255; return v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; });
 const f = (v: number) => v > 216 / 24389 ? Math.cbrt(v) : v * 841 / 108 + 4 / 29;
-function labAt(data: Uint8ClampedArray, p: number): RGB {
+export function labAt(data: Uint8ClampedArray, p: number): RGB {
   const r = LINEAR[data[p * 4]], g = LINEAR[data[p * 4 + 1]], b = LINEAR[data[p * 4 + 2]];
   const x = f((.4124564 * r + .3575761 * g + .1804375 * b) / .95047);
   const y = f(.2126729 * r + .7151522 * g + .072175 * b);

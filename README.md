@@ -50,11 +50,27 @@ Shinkou Pixel 是一款基于 Tauri 的图片转像素画桌面应用，主要�
 
 [AI 75 原尺寸结果](docs/images/illustration-ai-75.png) · [真实网络线稿响应](docs/images/illustration-ai-edges.png) · [模型来源与实现说明](docs/ai-pipeline.md)
 
-### 低分辨率的当前限制
+### 低像素重构
 
-当前结构保真算法在 32–64 px 下仍可能出现描边占比过高、五官断裂和细碎色块。TEED 提供的是边缘响应，不能学习手绘像素画中的选择性描边、五官重构和细节取舍；提高线条保护强度也不等于改善低分辨率表现。
+0.8.0 在结构保真模式的 32、48、64 px 下默认启用色块重构：输入区域可以在受约束的网格内调整位置，按最终色板重新组织形状，减少细线挤占整格的情况。本地 HRNetV2 网络定位正面动漫五官，结合原图证据补偿眼睛高光和细嘴线；卡通动物等不适用的素材使用通用色块与短笔画处理。
 
-项目已对实际 32/64 像素作品及神经像素化方法进行初步对照。候选网络尚未达到接入标准，当前版本未提供神经像素重构模式。参考作品、实测限制、后续技术方向和本地对比工具见 [低分辨率研究记录](docs/low-resolution-study.md)。
+![64 像素下原有处理与色块重构的实际对比](docs/images/low-resolution-64-comparison.png)
+
+![32 像素下原有处理与色块重构的实际对比](docs/images/low-resolution-32-comparison.png)
+
+同一张内置原图、相同 32 色上限；新模式采用默认描边保留 55、细节补偿 75、五官保真 75。结果未经人工修图，64 px 放大 6 倍、32 px 放大 12 倍展示。启用五官辅助后，可以在色数上限内为原图真实高光重新分配颜色，因此两种模式的具体色板可能不同。
+
+[48 px 对比](docs/images/low-resolution-48-comparison.png) · [32 px 原尺寸](docs/images/illustration-reconstruct-32.png) · [48 px 原尺寸](docs/images/illustration-reconstruct-48.png) · [64 px 原尺寸](docs/images/illustration-reconstruct-64.png)
+
+### 描边与五官的独立控制
+
+![描边保留 0、55、100 的实际对比](docs/images/outline-retention-comparison.png)
+
+**描边保留**控制细窄深色线的弱化程度；100 关闭该弱化，但仍使用色块重构。**细节补偿**用于平坦颜色区域内有依据的短小笔画。**五官保真**控制神经定位辅助，0 可关闭。也可将“小尺寸处理”切回“线稿保真”，使用原有流水线。
+
+[32 px 五官辅助开关对比](docs/images/semantic-detail-comparison.png) · [算法公式与模型说明](docs/low-resolution-pipeline.md) · [前期方案研究](docs/low-resolution-study.md)
+
+此功能是神经五官定位与几何重构的混合方案，未训练像素画生成模型。极小五官、侧脸、遮挡和复杂画面仍需要取舍；它不保证所有输入都优于原有处理。96 px 及以上继续使用原有流水线。
 
 ## 功能概览
 
@@ -68,6 +84,8 @@ Shinkou Pixel 是一款基于 Tauri 的图片转像素画桌面应用，主要�
 | 边缘处理 | 线条保护、轮廓规整、过渡色保留、碎点合并 |
 | 区域净化 | 可选 SLIC 超像素分区与主色归并，默认关闭 |
 | AI 结构辅助 | 本地 TEED 神经网络边缘分析、可调保护强度与独立线稿预览，默认关闭 |
+| 低像素重构 | 32–64 px 下的色块位置优化、可调描边与短笔画补偿；默认启用，可切回原有处理 |
+| AI 五官辅助 | 本地 HRNetV2 正面动漫五官定位、源图高光与细嘴线补偿；GPU / CPU 推理及自动回退 |
 | 色彩调整 | 亮度、对比度、饱和度；照片采样模式另提供细节增强与抖动 |
 | 预览 | 原图与结果切换、滑动对比、缩放、平移、像素网格 |
 | 网格取色 | 直接读取结果像素的 HEX、RGB、透明度与行列位置，支持复制 HEX / RGBA |
@@ -444,11 +462,12 @@ npm run tauri -- build --no-bundle
 npm test
 npm run test:gpu
 npm run test:ai
+npm run test:reconstruction
 npm run build
 cargo check --manifest-path src-tauri/Cargo.toml
 ```
 
-算法测试覆盖采样、细线保留、局部颜色归属、轮廓连接保护、过渡色配置、色板约束、透明度、设备失败回退、网格取色坐标、SLIC 连通区域净化和 AI 输入/保护约束。`test:gpu` 与 `test:ai` 为单独运行的硬件集成检查，其浏览器要求与文档示例脚本相同；`test:ai` 使用真实预训练模型，并检查 GPU 队列提交、CPU/GPU 响应与模型失败回退。无硬件适配器的 CI 环境可仅运行其余命令。
+算法测试覆盖采样、细线保留、局部颜色归属、轮廓连接保护、过渡色配置、色板约束、透明度、设备失败回退、网格取色坐标、SLIC 连通区域净化、低像素重构和神经辅助的源图证据约束。`test:gpu`、`test:ai`、`test:reconstruction` 为单独运行的硬件集成检查，其浏览器要求与文档示例脚本相同；后两项加载真实预训练模型，检查 GPU 队列提交及 CPU/GPU 预测。重构检查另验证最终输出中的高光与 160 px 兼容性。无硬件适配器的 CI 环境可仅运行其余命令。
 
 ### 生成文档示例
 
@@ -464,7 +483,7 @@ npm run docs:examples
 
 桌面外壳使用 **Tauri 2 / Rust**，界面使用 **React 19 / TypeScript / Vite**。图像转换与预设缩略图由独立 Web Worker 处理。
 
-AI 模块在主图像 Worker 内按需加载 **ONNX Runtime Web 1.31.1**。`npm ci` 与构建脚本从锁定的 npm 依赖复制匹配的 Asyncify 运行时到本地静态资源，不从 CDN 加载。TEED 权重、模型卡与许可位于 `public/models/`；模型重建见 [AI 说明](docs/ai-pipeline.md)。
+AI 模块在主图像 Worker 内按需加载 **ONNX Runtime Web 1.31.1**。`npm ci` 与构建脚本从锁定的 npm 依赖复制匹配的 Asyncify 运行时到本地静态资源，不从 CDN 加载。TEED、HRNetV2、动漫人脸候选模型及其模型卡、许可位于 `public/models/`；实现与重建方式见 [TEED 说明](docs/ai-pipeline.md)和[低像素流水线](docs/low-resolution-pipeline.md)。
 
 ```text
 src/

@@ -1,7 +1,7 @@
 {
   "name": "shinkou-img2pix",
   "private": true,
-  "version": "0.7.0",
+  "version": "0.8.0",
   "type": "module",
   "scripts": {
     "postinstall": "node scripts/prepare-ort.mjs",
@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:gpu": "node scripts/verify-gpu.mjs",
     "test:ai": "node scripts/verify-ai.mjs",
-    "docs:examples": "node scripts/generate-readme-examples.mjs"
+    "docs:examples": "node scripts/generate-readme-examples.mjs",
+    "test:reconstruction": "node scripts/verify-reconstruction.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.8.0",

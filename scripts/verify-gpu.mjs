@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 // Hardware integration check; deliberately fails rather than silently testing software.
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const server = await createServer({ root, configFile: false, cacheDir: 'node_modules/.vite-gpu-check', logLevel: 'error', server: { host: '127.0.0.1', port: 0 } });
+const server = await createServer({ root, configFile: false, cacheDir: 'node_modules/.vite-gpu-check', logLevel: 'error', optimizeDeps: { noDiscovery: true, entries: [] }, server: { host: '127.0.0.1', port: 0, strictPort: false, watch: { ignored: ['**/.cache/**'] } } });
 let browser;
 try {
   await server.listen();
@@ -13,6 +13,7 @@ try {
     ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH, headless: true }
     : { ...(process.platform === 'win32' ? { channel: 'msedge' } : {}), headless: true });
   const page = await browser.newPage();
+  page.setDefaultTimeout(120000);
   await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/illustration.png`);
   const report = await page.evaluate(async () => {
     const { WebGpuAccelerator } = await import('/src/engine/webgpu.ts');
