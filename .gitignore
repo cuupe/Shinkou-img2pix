@@ -8,3 +8,5 @@ test-results/
 playwright-report/
 release/
 *.tsbuildinfo
+.cache/
+public/ort/

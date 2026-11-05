@@ -1,15 +1,17 @@
 {
   "name": "shinkou-img2pix",
   "private": true,
-  "version": "0.6.0",
+  "version": "0.7.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1 --port 1420 --strictPort",
-    "build": "tsc -b && vite build",
+    "postinstall": "node scripts/prepare-ort.mjs",
+    "dev": "node scripts/prepare-ort.mjs && vite --host 127.0.0.1 --port 1420 --strictPort",
+    "build": "node scripts/prepare-ort.mjs && tsc -b && vite build",
     "preview": "vite preview --host 127.0.0.1 --port 1420",
     "tauri": "tauri",
     "test": "vitest run",
     "test:gpu": "node scripts/verify-gpu.mjs",
+    "test:ai": "node scripts/verify-ai.mjs",
     "docs:examples": "node scripts/generate-readme-examples.mjs"
   },
   "dependencies": {
@@ -17,6 +19,7 @@
     "@tauri-apps/plugin-dialog": "^2.4.0",
     "@tauri-apps/plugin-fs": "^2.4.0",
     "lucide-react": "^0.468.0",
+    "onnxruntime-web": "1.31.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },

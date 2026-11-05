@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "appVersion": "0.6.0",
+  "appVersion": "0.7.0",
   "sources": [
     {
       "path": "public/illustration.png",
@@ -27,6 +27,7 @@
         "edgeSmoothing": 65,
         "transitionRetention": 25,
         "regionCleanup": 0,
+        "aiStrength": 0,
         "cleanup": 45,
         "size": 128,
         "colors": 32,
@@ -53,6 +54,7 @@
         "edgeSmoothing": 65,
         "transitionRetention": 25,
         "regionCleanup": 0,
+        "aiStrength": 0,
         "cleanup": 45,
         "size": 256,
         "colors": 32,
@@ -79,6 +81,7 @@
         "edgeSmoothing": 65,
         "transitionRetention": 0,
         "regionCleanup": 0,
+        "aiStrength": 0,
         "cleanup": 45,
         "size": 128,
         "colors": 32,
@@ -105,6 +108,7 @@
         "edgeSmoothing": 65,
         "transitionRetention": 100,
         "regionCleanup": 0,
+        "aiStrength": 0,
         "cleanup": 45,
         "size": 128,
         "colors": 32,
@@ -131,6 +135,7 @@
         "edgeSmoothing": 65,
         "transitionRetention": 25,
         "regionCleanup": 70,
+        "aiStrength": 0,
         "cleanup": 45,
         "size": 128,
         "colors": 32,
@@ -142,6 +147,37 @@
         "dither": "none",
         "ditherAmount": 45,
         "transparent": true
+      }
+    },
+    {
+      "source": "public/illustration.png",
+      "output": "docs/images/illustration-ai-75.png",
+      "width": 128,
+      "height": 128,
+      "paletteColors": 32,
+      "settings": {
+        "backend": "cpu",
+        "method": "structure",
+        "lineProtection": 75,
+        "edgeSmoothing": 65,
+        "transitionRetention": 25,
+        "regionCleanup": 0,
+        "aiStrength": 75,
+        "cleanup": 45,
+        "size": 128,
+        "colors": 32,
+        "palette": "adaptive",
+        "brightness": 0,
+        "contrast": 0,
+        "saturation": 0,
+        "detail": true,
+        "dither": "none",
+        "ditherAmount": 45,
+        "transparent": true
+      },
+      "ai": {
+        "model": "TEED",
+        "backend": "wasm"
       }
     },
     {
@@ -157,6 +193,7 @@
         "edgeSmoothing": 65,
         "transitionRetention": 25,
         "regionCleanup": 0,
+        "aiStrength": 0,
         "cleanup": 45,
         "size": 128,
         "colors": 32,

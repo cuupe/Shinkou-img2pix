@@ -12,7 +12,8 @@ await mkdir(output, { recursive: true });
 
 const server = await createServer({
   root, configFile: false, cacheDir: 'node_modules/.vite-docs-examples', logLevel: 'error',
-  server: { host: '127.0.0.1', port: 0, strictPort: false },
+  optimizeDeps: { noDiscovery: true, entries: [] },
+  server: { host: '127.0.0.1', port: 0, strictPort: false, watch: { ignored: ['**/.cache/**'] } },
 });
 let browser;
 try {
@@ -25,7 +26,7 @@ try {
   const page = await browser.newPage();
   await page.goto(`${base}/illustration.png`);
   const generated = await page.evaluate(async () => {
-    const { pixelate } = await import('/src/engine/pixelate.ts');
+    const { pixelateAccelerated } = await import('/src/engine/backend.ts');
     const { DEFAULT_SETTINGS } = await import('/src/engine/types.ts');
     const assets = {}, records = [];
     const toCanvas = result => {
@@ -44,12 +45,14 @@ try {
       context.drawImage(bitmap, 0, 0); bitmap.close();
       return { canvas, data: context.getImageData(0, 0, canvas.width, canvas.height).data, width: canvas.width, height: canvas.height };
     };
-    const convert = (source, sourceName, filename, patch) => {
+    const convert = async (source, sourceName, filename, patch) => {
       const settings = { ...DEFAULT_SETTINGS, ...patch, backend: 'cpu' };
-      const result = pixelate(source, settings), canvas = toCanvas(result);
+      const result = await pixelateAccelerated(source, settings), canvas = toCanvas(result);
+      if (settings.aiStrength > 0 && result.execution.ai?.backend === 'none') throw new Error(result.execution.ai.reason);
       // Native-resolution output, suitable for inspection or reuse as a fixture.
       assets[filename] = canvas.toDataURL('image/png').split(',')[1];
-      records.push({ source: sourceName, output: `docs/images/${filename}`, width: result.width, height: result.height, paletteColors: result.palette.length, settings });
+      records.push({ source: sourceName, output: `docs/images/${filename}`, width: result.width, height: result.height, paletteColors: result.palette.length, settings, ai: result.execution.ai ? { model: result.execution.ai.model, backend: result.execution.ai.backend } : undefined });
+      if (result.execution.ai?.preview) assets['illustration-ai-edges.png'] = toCanvas(result.execution.ai.preview).toDataURL('image/png').split(',')[1];
       return canvas;
     };
     const comparison = (filename, title, panels, caption) => {
@@ -79,30 +82,36 @@ try {
     };
 
     const illustration = await input('illustration.png');
-    const illustration128 = convert(illustration, 'public/illustration.png', 'illustration-128.png', { size: 128 });
-    const illustration256 = convert(illustration, 'public/illustration.png', 'illustration-256.png', { size: 256 });
+    const illustration128 = await convert(illustration, 'public/illustration.png', 'illustration-128.png', { size: 128 });
+    const illustration256 = await convert(illustration, 'public/illustration.png', 'illustration-256.png', { size: 256 });
     comparison('illustration-comparison.png', '插画转换示例', [
       { canvas: illustration.canvas, label: `原图 · ${illustration.width} × ${illustration.height}`, original: true },
       { canvas: illustration128, label: '结构保真 · 128 × 128' },
       { canvas: illustration256, label: '结构保真 · 256 × 256' },
     ], '自适应 32 色 · 过渡色保留 25 · 线条保护 75 · 轮廓规整 65 · 碎点合并 45');
 
-    const retain0 = convert(illustration, 'public/illustration.png', 'illustration-retention-0.png', { size: 128, transitionRetention: 0 });
-    const retain100 = convert(illustration, 'public/illustration.png', 'illustration-retention-100.png', { size: 128, transitionRetention: 100 });
+    const retain0 = await convert(illustration, 'public/illustration.png', 'illustration-retention-0.png', { size: 128, transitionRetention: 0 });
+    const retain100 = await convert(illustration, 'public/illustration.png', 'illustration-retention-100.png', { size: 128, transitionRetention: 100 });
     comparison('transition-comparison.png', '过渡色保留对比', [
       { canvas: retain0, label: '0 · 优先主体色' },
       { canvas: illustration128, label: '25 · 默认值' },
       { canvas: retain100, label: '100 · 关闭过渡归并' },
     ], '相同原图、128 × 128、32 色；仅改变过渡色保留，其余参数一致。');
 
-    const slic70 = convert(illustration, 'public/illustration.png', 'illustration-slic-70.png', { size: 128, regionCleanup: 70 });
+    const slic70 = await convert(illustration, 'public/illustration.png', 'illustration-slic-70.png', { size: 128, regionCleanup: 70 });
     comparison('slic-comparison.png', 'SLIC 区域净化对比', [
       { canvas: illustration128, label: '0 · 默认关闭' },
       { canvas: slic70, label: '70 · 区域净化' },
     ], '相同原图、128 × 128、32 色；仅改变 SLIC 区域净化，其余参数一致。');
 
+    const ai75 = await convert(illustration, 'public/illustration.png', 'illustration-ai-75.png', { size: 128, aiStrength: 75 });
+    comparison('ai-comparison.png', '本地 AI 线条辅助对比', [
+      { canvas: illustration128, label: '0 · 基础算法' },
+      { canvas: ai75, label: '75 · TEED 线条辅助' },
+    ], '相同原图、128 × 128、32 色；保持相同色板，仅改变 AI 线条辅助强度。');
+
     const landscape = await input('lighthouse.png');
-    const landscape128 = convert(landscape, 'public/lighthouse.png', 'landscape-128.png', { method: 'sample', size: 128, dither: 'floyd', ditherAmount: 35 });
+    const landscape128 = await convert(landscape, 'public/lighthouse.png', 'landscape-128.png', { method: 'sample', size: 128, dither: 'floyd', ditherAmount: 35 });
     comparison('landscape-comparison.png', '风景转换示例', [
       { canvas: landscape.canvas, label: `原图 · ${landscape.width} × ${landscape.height}`, original: true },
       { canvas: landscape128, label: `照片采样 · ${landscape128.width} × ${landscape128.height}` },

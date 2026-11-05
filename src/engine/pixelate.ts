@@ -209,7 +209,7 @@ function quantize(data: Uint8ClampedArray, w: number, h: number, palette: RGB[],
   }
 }
 
-export interface PreparedImage { data: Uint8ClampedArray; features?: FeatureMap }
+export interface PreparedImage { data: Uint8ClampedArray; features?: FeatureMap; aiImportance?: Float32Array }
 export type PipelineStep =
   | { kind: 'prepare'; source: PixelSource; width: number; height: number; settings: Settings; withFeatures: boolean }
   | { kind: 'quantize'; data: Uint8ClampedArray; width: number; height: number; palette: RGB[]; settings: Settings };
@@ -246,6 +246,8 @@ function* pipeline(source: PixelSource, settings: Settings): Generator<PipelineS
     const palette = measure('palette', () => settings.palette === 'adaptive'
       ? adaptivePalette(working, Math.max(2, Math.min(256, settings.colors)), features.importance, features.coherence, settings.transitionRetention ?? 25)
       : PALETTES[settings.palette]);
+    // Neural guidance changes ownership/protection, never the extracted palette.
+    if (prepared.aiImportance) features.importance = prepared.aiImportance;
     const originalWorking = working.slice();
     t = performance.now(); yield { kind: 'quantize', data: working, width: workWidth, height: workHeight, palette, settings: { ...settings, dither: 'none' } };
     timings.quantize = performance.now() - t;

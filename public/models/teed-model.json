@@ -1,0 +1,45 @@
+{
+  "name": "TEED BIPED epoch 7",
+  "upstream": "https://github.com/xavysp/TEED",
+  "revision": "40fa4b1391dc6424f88989d0ca75d5b592c8681d",
+  "license": "MIT",
+  "input": {
+    "shape": [
+      1,
+      3,
+      512,
+      512
+    ],
+    "layout": "BGR NCHW",
+    "mean": [
+      103.939,
+      116.779,
+      123.68
+    ],
+    "scale": 1
+  },
+  "output": {
+    "name": "edges",
+    "shape": [
+      1,
+      1,
+      512,
+      512
+    ],
+    "range": [
+      0,
+      1
+    ],
+    "sigmoidIncluded": true
+  },
+  "opset": 17,
+  "sha256": "f7766d262d6bd821ce5989724762dbd35cd99ecb3784361158d940119830c1c2",
+  "sourceSha256": {
+    "ted.py": "ded257568a4775ed08f741daa228c43f0c020f6f773a62744e7be64d8a719373",
+    "utils/AF/Fsmish.py": "e100aa88b3f84b036340c7f1b09e3a805712c6ac2688728758781e0c9acddc2d",
+    "utils/AF/Xsmish.py": "b161f4644e682bda4cbc0985809a0f7c07ac48ae374c038358a74b7c76b2c45d",
+    "LICENSE": "b62889ee92d00f60fb54ccbbb3c9bb0a1cdbc10bbf779f0d715e53f9acc8733d",
+    "checkpoints/BIPED/7/7_model.pth": "d0109e7f40e7d9f1f495d34947eb08167e8fbb0a13b4e6ab3121261fb8d5a416"
+  },
+  "modifications": "Removed unused diagnostic import; exported only fused output with sigmoid; fixed 512x512 input. No retraining."
+}
