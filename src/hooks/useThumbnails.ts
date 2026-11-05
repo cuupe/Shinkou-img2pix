@@ -16,7 +16,7 @@ export function useThumbnails(source: PixelSource | undefined, method: Settings[
         const key = PRESETS[event.data.id].id;
         setThumbs(t => ({ ...t, [key]: url }));
       };
-      PRESETS.forEach((p, id) => worker!.postMessage({ id, source: id === 0 ? source : undefined, settings: { ...DEFAULT_SETTINGS, ...p.settings, method, transitionRetention, size: 96 } }));
+      PRESETS.forEach((p, id) => worker!.postMessage({ id, keepAll: true, source: id === 0 ? source : undefined, settings: { ...DEFAULT_SETTINGS, ...p.settings, backend: 'cpu', method, transitionRetention, size: 96 } }));
     }, 200);
     return () => { clearTimeout(timer); worker?.terminate(); };
   }, [source, method, transitionRetention]);

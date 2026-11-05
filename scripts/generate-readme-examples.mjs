@@ -11,7 +11,7 @@ const { version } = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'
 await mkdir(output, { recursive: true });
 
 const server = await createServer({
-  root, configFile: false, logLevel: 'error',
+  root, configFile: false, cacheDir: 'node_modules/.vite-docs-examples', logLevel: 'error',
   server: { host: '127.0.0.1', port: 0, strictPort: false },
 });
 let browser;
@@ -45,7 +45,7 @@ try {
       return { canvas, data: context.getImageData(0, 0, canvas.width, canvas.height).data, width: canvas.width, height: canvas.height };
     };
     const convert = (source, sourceName, filename, patch) => {
-      const settings = { ...DEFAULT_SETTINGS, ...patch };
+      const settings = { ...DEFAULT_SETTINGS, ...patch, backend: 'cpu' };
       const result = pixelate(source, settings), canvas = toCanvas(result);
       // Native-resolution output, suitable for inspection or reuse as a fixture.
       assets[filename] = canvas.toDataURL('image/png').split(',')[1];

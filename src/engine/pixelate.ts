@@ -3,6 +3,7 @@ import type { PixelResult, PixelSource, RGB, Settings } from './types';
 import { cleanRegions, detectFeatures, mapRegions } from './structure';
 import { regularizeBoundaries } from './boundaries';
 import { resolveTransitions } from './transitions';
+import type { FeatureMap } from './structure';
 
 const clamp = (n: number, max = 255) => Math.max(0, Math.min(max, n));
 const linear = (v: number) => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
@@ -207,8 +208,27 @@ function quantize(data: Uint8ClampedArray, w: number, h: number, palette: RGB[],
   }
 }
 
-export function pixelate(source: PixelSource, settings: Settings): PixelResult {
+export interface PreparedImage { data: Uint8ClampedArray; features?: FeatureMap }
+export type PipelineStep =
+  | { kind: 'prepare'; source: PixelSource; width: number; height: number; settings: Settings; withFeatures: boolean }
+  | { kind: 'quantize'; data: Uint8ClampedArray; width: number; height: number; palette: RGB[]; settings: Settings };
+export type PipelineOutput = PreparedImage | undefined;
+
+export function executeCpuStep(step: PipelineStep): PipelineOutput {
+  if (step.kind === 'quantize') {
+    quantize(step.data, step.width, step.height, step.palette, step.settings); return;
+  }
+  const data = areaSample(step.source, step.width, step.height, step.settings.transparent);
+  adjust(data, step.width, step.height, step.settings);
+  return { data, features: step.withFeatures ? detectFeatures(data, step.width, step.height) : undefined };
+}
+
+/** Both backends drive this same pipeline; only independent per-pixel stages differ. */
+function* pipeline(source: PixelSource, settings: Settings): Generator<PipelineStep, PixelResult, PipelineOutput> {
   const start = performance.now();
+  const timings: Record<string, number> = {};
+  const measure = <T,>(name: string, operation: () => T): T => { const t = performance.now(); const out = operation(); timings[name] = performance.now() - t; return out; };
+  const result = (data: Uint8ClampedArray, width: number, height: number, palette: RGB[]): PixelResult => ({ data, width, height, palette, duration: performance.now() - start, execution: { backend: 'cpu', gpuStages: [], timings } });
   if (!source.width || !source.height || source.data.length !== source.width * source.height * 4) throw new Error('图片数据不完整');
   const size = Math.max(16, Math.min(512, Math.round(settings.size)));
   const { width, height } = dimensions(source.width, source.height, size);
@@ -218,23 +238,38 @@ export function pixelate(source: PixelSource, settings: Settings): PixelResult {
     // The 2048 edge cap keeps the analysis buffer at the previous memory ceiling.
     const analysisScale = Math.min(8, 2048 / Math.max(width, height));
     const workWidth = Math.min(source.width, Math.round(width * analysisScale)), workHeight = Math.min(source.height, Math.round(height * analysisScale));
-    const working = areaSample(source, workWidth, workHeight, settings.transparent);
-    adjust(working, workWidth, workHeight, { ...settings, detail: false });
-    const features = detectFeatures(working, workWidth, workHeight);
-    const palette = settings.palette === 'adaptive'
+    let t = performance.now();
+    const prepared = (yield { kind: 'prepare', source, width: workWidth, height: workHeight, settings: { ...settings, detail: false }, withFeatures: true })!;
+    timings.prepare = performance.now() - t;
+    const working = prepared.data, features = prepared.features!;
+    const palette = measure('palette', () => settings.palette === 'adaptive'
       ? adaptivePalette(working, Math.max(2, Math.min(256, settings.colors)), features.importance, features.coherence, settings.transitionRetention ?? 25)
-      : PALETTES[settings.palette];
+      : PALETTES[settings.palette]);
     const originalWorking = working.slice();
-    quantize(working, workWidth, workHeight, palette, { ...settings, dither: 'none' });
-    resolveTransitions(originalWorking, working, workWidth, workHeight, palette, features, settings.transitionRetention ?? 25);
-    const mapped = mapRegions(working, workWidth, workHeight, width, height, palette, features, settings.lineProtection);
-    regularizeBoundaries(mapped, width, height, palette, settings.edgeSmoothing ?? 65);
-    cleanRegions(mapped, width, height, palette, settings.cleanup);
-    return { data: mapped.data, width, height, palette, duration: performance.now() - start };
+    t = performance.now(); yield { kind: 'quantize', data: working, width: workWidth, height: workHeight, palette, settings: { ...settings, dither: 'none' } };
+    timings.quantize = performance.now() - t;
+    measure('transitions', () => resolveTransitions(originalWorking, working, workWidth, workHeight, palette, features, settings.transitionRetention ?? 25));
+    const mapped = measure('mapping', () => mapRegions(working, workWidth, workHeight, width, height, palette, features, settings.lineProtection));
+    measure('contours', () => { regularizeBoundaries(mapped, width, height, palette, settings.edgeSmoothing ?? 65); cleanRegions(mapped, width, height, palette, settings.cleanup); });
+    return result(mapped.data, width, height, palette);
   }
-  const data = areaSample(source, width, height, settings.transparent);
-  adjust(data, width, height, settings);
-  const palette = settings.palette === 'adaptive' ? adaptivePalette(data, Math.max(2, Math.min(256, settings.colors))) : PALETTES[settings.palette];
-  quantize(data, width, height, palette, settings);
-  return { data, width, height, palette, duration: performance.now() - start };
+  let t = performance.now();
+  const prepared = (yield { kind: 'prepare', source, width, height, settings, withFeatures: false })!;
+  timings.prepare = performance.now() - t;
+  const data = prepared.data;
+  const palette = measure('palette', () => settings.palette === 'adaptive' ? adaptivePalette(data, Math.max(2, Math.min(256, settings.colors))) : PALETTES[settings.palette]);
+  t = performance.now(); yield { kind: 'quantize', data, width, height, palette, settings }; timings.quantize = performance.now() - t;
+  return result(data, width, height, palette);
+}
+
+export function pixelate(source: PixelSource, settings: Settings): PixelResult {
+  const task = pipeline(source, settings); let step = task.next();
+  while (!step.done) step = task.next(executeCpuStep(step.value));
+  return step.value;
+}
+
+export async function pixelateWithExecutor(source: PixelSource, settings: Settings, execute: (step: PipelineStep) => Promise<PipelineOutput>): Promise<PixelResult> {
+  const task = pipeline(source, settings); let step = task.next();
+  while (!step.done) step = task.next(await execute(step.value));
+  return step.value;
 }
