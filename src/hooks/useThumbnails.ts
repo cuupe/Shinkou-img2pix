@@ -3,7 +3,7 @@ import { PRESETS } from '../engine/palettes';
 import { DEFAULT_SETTINGS } from '../engine/types';
 import type { PixelSource, Settings, WorkerResponse } from '../engine/types';
 import { resultCanvas } from '../lib/image';
-export function useThumbnails(source: PixelSource | undefined, method: Settings['method'], transitionRetention: number) {
+export function useThumbnails(source: PixelSource | undefined, method: Settings['method'], transitionRetention: number, regionCleanup: number) {
   const [thumbs, setThumbs] = useState<Record<string, string>>({});
   useEffect(() => {
     if (!source) return;
@@ -16,9 +16,9 @@ export function useThumbnails(source: PixelSource | undefined, method: Settings[
         const key = PRESETS[event.data.id].id;
         setThumbs(t => ({ ...t, [key]: url }));
       };
-      PRESETS.forEach((p, id) => worker!.postMessage({ id, keepAll: true, source: id === 0 ? source : undefined, settings: { ...DEFAULT_SETTINGS, ...p.settings, backend: 'cpu', method, transitionRetention, size: 96 } }));
+      PRESETS.forEach((p, id) => worker!.postMessage({ id, keepAll: true, source: id === 0 ? source : undefined, settings: { ...DEFAULT_SETTINGS, ...p.settings, backend: 'cpu', method, transitionRetention, regionCleanup, size: 96 } }));
     }, 200);
     return () => { clearTimeout(timer); worker?.terminate(); };
-  }, [source, method, transitionRetention]);
+  }, [source, method, transitionRetention, regionCleanup]);
   return thumbs;
 }

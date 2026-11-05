@@ -78,6 +78,17 @@ try {
       const median = values => [...values].sort((a, b) => a - b)[1];
       benchmarks.push({ size, cpuMs: median(cpuRuns), gpuMs: median(gpuRuns), cpuRuns, gpuRuns, psnr, delta, execution: actual.execution });
     }
+    const slicSettings = { ...settings, size: 128, regionCleanup: 70 };
+    const slicCpu = pixelate(illustration, slicSettings), slicGpu = await pixelateAccelerated(illustration, slicSettings, async () => gpu);
+    check(slicGpu.execution.backend === 'gpu' && slicGpu.execution.timings.regions >= 0, 'SLIC did not run with GPU preparation');
+    const slicDelta = difference(slicCpu.data, slicGpu.data);
+    let slicSquared = 0;
+    for (let i = 0; i < slicCpu.data.length; i++) {
+      if (i % 4 === 3) check(slicCpu.data[i] === slicGpu.data[i], 'SLIC/GPU alpha differs');
+      else slicSquared += (slicCpu.data[i] - slicGpu.data[i]) ** 2;
+    }
+    const slicPsnr = slicSquared ? 10 * Math.log10(255 ** 2 / (slicSquared / (slicCpu.width * slicCpu.height * 3))) : null;
+    check(slicPsnr === null || slicPsnr > 38, `SLIC/GPU image differs excessively: ${slicPsnr}dB`);
     // An unavailable device must retry the CPU path and preserve its exact output.
     const parameters = { ...settings, size: 32 }, expected = pixelate(source, parameters);
     const fallback = await pixelateAccelerated(source, parameters, async () => { throw new Error('Unavailable test device'); });
@@ -96,7 +107,7 @@ try {
       worker.postMessage({ id: 3, keepAll: true, settings: { ...settings, size: 48 } });
       worker.postMessage({ id: 4, settings: parameters });
     }); worker.terminate();
-    return { device: gpu.deviceName, precision, benchmarks, fallback: fallback.execution, workerQueue: 'passed' };
+    return { device: gpu.deviceName, precision, benchmarks, slic: { delta: slicDelta, psnr: slicPsnr, cpuMs: slicCpu.duration, gpuMs: slicGpu.duration }, fallback: fallback.execution, workerQueue: 'passed' };
   });
   console.log(JSON.stringify(report, null, 2));
 } finally { await browser?.close(); await server.close(); }

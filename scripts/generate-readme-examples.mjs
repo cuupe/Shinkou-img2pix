@@ -95,6 +95,12 @@ try {
       { canvas: retain100, label: '100 · 关闭过渡归并' },
     ], '相同原图、128 × 128、32 色；仅改变过渡色保留，其余参数一致。');
 
+    const slic70 = convert(illustration, 'public/illustration.png', 'illustration-slic-70.png', { size: 128, regionCleanup: 70 });
+    comparison('slic-comparison.png', 'SLIC 区域净化对比', [
+      { canvas: illustration128, label: '0 · 默认关闭' },
+      { canvas: slic70, label: '70 · 区域净化' },
+    ], '相同原图、128 × 128、32 色；仅改变 SLIC 区域净化，其余参数一致。');
+
     const landscape = await input('lighthouse.png');
     const landscape128 = convert(landscape, 'public/lighthouse.png', 'landscape-128.png', { method: 'sample', size: 128, dither: 'floyd', ditherAmount: 35 });
     comparison('landscape-comparison.png', '风景转换示例', [

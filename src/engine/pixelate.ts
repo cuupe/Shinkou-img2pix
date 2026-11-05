@@ -4,6 +4,7 @@ import { cleanRegions, detectFeatures, mapRegions } from './structure';
 import { regularizeBoundaries } from './boundaries';
 import { resolveTransitions } from './transitions';
 import type { FeatureMap } from './structure';
+import { cleanSuperpixels } from './slic';
 
 const clamp = (n: number, max = 255) => Math.max(0, Math.min(max, n));
 const linear = (v: number) => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
@@ -249,6 +250,7 @@ function* pipeline(source: PixelSource, settings: Settings): Generator<PipelineS
     t = performance.now(); yield { kind: 'quantize', data: working, width: workWidth, height: workHeight, palette, settings: { ...settings, dither: 'none' } };
     timings.quantize = performance.now() - t;
     measure('transitions', () => resolveTransitions(originalWorking, working, workWidth, workHeight, palette, features, settings.transitionRetention ?? 25));
+    if (settings.regionCleanup > 0) measure('regions', () => cleanSuperpixels(originalWorking, working, workWidth, workHeight, palette, features, settings.regionCleanup, Math.max(6, Math.min(24, Math.round(Math.min(workWidth / width, workHeight / height) * 2)))));
     const mapped = measure('mapping', () => mapRegions(working, workWidth, workHeight, width, height, palette, features, settings.lineProtection));
     measure('contours', () => { regularizeBoundaries(mapped, width, height, palette, settings.edgeSmoothing ?? 65); cleanRegions(mapped, width, height, palette, settings.cleanup); });
     return result(mapped.data, width, height, palette);
