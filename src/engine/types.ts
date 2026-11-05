@@ -5,6 +5,7 @@ export interface Settings {
   method: 'structure' | 'sample';
   lineProtection: number;
   edgeSmoothing: number;
+  transitionRetention: number;
   cleanup: number;
   size: number;
   colors: number;
@@ -22,7 +23,7 @@ export interface PixelResult extends PixelSource { palette: RGB[]; duration: num
 export interface WorkerRequest { id: number; source?: PixelSource; settings: Settings }
 export interface WorkerResponse { id: number; result?: PixelResult; error?: string }
 export const DEFAULT_SETTINGS: Settings = {
-  method: 'structure', lineProtection: 75, edgeSmoothing: 65, cleanup: 45,
+  method: 'structure', lineProtection: 75, edgeSmoothing: 65, transitionRetention: 25, cleanup: 45,
   size: 160, colors: 32, palette: 'adaptive', brightness: 0, contrast: 0,
   saturation: 0, detail: true, dither: 'none', ditherAmount: 45, transparent: true,
 };

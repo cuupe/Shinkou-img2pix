@@ -82,23 +82,28 @@ function adjust(data: Uint8ClampedArray, w: number, h: number, settings: Setting
   }
 }
 
-interface ColorPoint { rgb: RGB; lab: RGB; weight: number }
-function adaptivePalette(data: Uint8ClampedArray, count: number, importance?: Float32Array, coherence?: Float32Array): RGB[] {
+interface ColorPoint { rgb: RGB; lab: RGB; weight: number; sample: RGB }
+function adaptivePalette(data: Uint8ClampedArray, count: number, importance?: Float32Array, coherence?: Float32Array, transitionRetention = 100): RGB[] {
   const bins = new Map<number, number[]>();
+  const keep = Math.max(0, Math.min(1, transitionRetention / 100));
   for (let i = 0; i < data.length; i += 4) {
     if (!data[i + 3]) continue;
     const key = (data[i] >> 3) << 10 | (data[i + 1] >> 3) << 5 | data[i + 2] >> 3;
     // Flat interiors and coherent lines train the palette; antialiased mixtures
     // must not receive more palette capacity just because their contrast is high.
     const stable = coherence?.[i / 4] ?? 1;
-    const weight = (.03 + .97 * stable * stable) * (1 + (importance?.[i / 4] ?? 0) * 4);
+    const stableWeight = keep * keep + (1 - keep * keep) * stable ** (4 - 2 * keep);
+    const weight = (.015 + .985 * stableWeight) * (1 + (importance?.[i / 4] ?? 0) * 4);
     const bin = bins.get(key);
-    if (bin) { bin[0] += data[i] * weight; bin[1] += data[i + 1] * weight; bin[2] += data[i + 2] * weight; bin[3] += weight; }
-    else bins.set(key, [data[i] * weight, data[i + 1] * weight, data[i + 2] * weight, weight]);
+    if (bin) {
+      bin[0] += data[i] * weight; bin[1] += data[i + 1] * weight; bin[2] += data[i + 2] * weight; bin[3] += weight;
+      if (weight > bin[4]) { bin[4] = weight; bin[5] = data[i]; bin[6] = data[i + 1]; bin[7] = data[i + 2]; }
+    }
+    else bins.set(key, [data[i] * weight, data[i + 1] * weight, data[i + 2] * weight, weight, weight, data[i], data[i + 1], data[i + 2]]);
   }
   const points: ColorPoint[] = Array.from(bins.values(), b => {
     const rgb: RGB = [b[0] / b[3], b[1] / b[3], b[2] / b[3]];
-    return { rgb, lab: oklab(rgb), weight: b[3] };
+    return { rgb, lab: oklab(rgb), weight: b[3], sample: [b[5], b[6], b[7]] };
   });
   if (!points.length) return [];
   function box(points: ColorPoint[]) {
@@ -132,13 +137,29 @@ function adaptivePalette(data: Uint8ClampedArray, count: number, importance?: Fl
     palette = sums.map((s, i) => s[3] ? [Math.round(s[0] / s[3]), Math.round(s[1] / s[3]), Math.round(s[2] / s[3])] : palette[i]);
   }
   if (coherence && palette.length > 1) {
+    if (transitionRetention <= 0) {
+      // At the cleanest setting use actual input representatives, not new colors
+      // invented by cluster means. Retain the same user-specified palette budget.
+      const labs = palette.map(oklab), maxima = palette.map(() => 0);
+      const assignments = points.map(p => nearest(p.lab, labs));
+      points.forEach((p, i) => { const k = assignments[i]; maxima[k] = Math.max(maxima[k], p.weight); });
+      const costs = palette.map(() => Infinity), representatives = palette.slice();
+      points.forEach((p, i) => {
+        const k = assignments[i]; if (p.weight < maxima[k] * .08) return;
+        const cost = p.lab.reduce((sum, v, channel) => sum + (v - labs[k][channel]) ** 2, 0);
+        if (cost < costs[k]) { costs[k] = cost; representatives[k] = p.sample; }
+      });
+      palette = representatives;
+    }
     // True black ink and near-white highlights must not be averaged into a large
     // neighboring brown/mint cluster. Only reserve colors actually in the input.
     for (const light of [false, true]) {
       const extremes = points.filter(p => light ? Math.min(...p.rgb) >= 245 : Math.max(...p.rgb) <= 12);
       const weight = extremes.reduce((sum, p) => sum + p.weight, 0);
       if (weight < 3) continue;
-      const rgb = [0, 1, 2].map(k => Math.round(extremes.reduce((sum, p) => sum + p.rgb[k] * p.weight, 0) / weight)) as RGB;
+      const rgb = transitionRetention <= 0
+        ? extremes.reduce((best, p) => p.weight > best.weight ? p : best).sample
+        : [0, 1, 2].map(k => Math.round(extremes.reduce((sum, p) => sum + p.rgb[k] * p.weight, 0) / weight)) as RGB;
       palette[nearest(oklab(rgb), palette.map(oklab))] = rgb;
     }
   }
@@ -201,11 +222,11 @@ export function pixelate(source: PixelSource, settings: Settings): PixelResult {
     adjust(working, workWidth, workHeight, { ...settings, detail: false });
     const features = detectFeatures(working, workWidth, workHeight);
     const palette = settings.palette === 'adaptive'
-      ? adaptivePalette(working, Math.max(2, Math.min(256, settings.colors)), features.importance, features.coherence)
+      ? adaptivePalette(working, Math.max(2, Math.min(256, settings.colors)), features.importance, features.coherence, settings.transitionRetention ?? 25)
       : PALETTES[settings.palette];
     const originalWorking = working.slice();
     quantize(working, workWidth, workHeight, palette, { ...settings, dither: 'none' });
-    resolveTransitions(originalWorking, working, workWidth, workHeight, palette, features);
+    resolveTransitions(originalWorking, working, workWidth, workHeight, palette, features, settings.transitionRetention ?? 25);
     const mapped = mapRegions(working, workWidth, workHeight, width, height, palette, features, settings.lineProtection);
     regularizeBoundaries(mapped, width, height, palette, settings.edgeSmoothing ?? 65);
     cleanRegions(mapped, width, height, palette, settings.cleanup);
