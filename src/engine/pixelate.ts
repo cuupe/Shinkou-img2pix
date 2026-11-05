@@ -1,6 +1,8 @@
 import { PALETTES } from './palettes';
 import type { PixelResult, PixelSource, RGB, Settings } from './types';
 import { cleanRegions, detectFeatures, mapRegions } from './structure';
+import { regularizeBoundaries } from './boundaries';
+import { resolveTransitions } from './transitions';
 
 const clamp = (n: number, max = 255) => Math.max(0, Math.min(max, n));
 const linear = (v: number) => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
@@ -81,12 +83,15 @@ function adjust(data: Uint8ClampedArray, w: number, h: number, settings: Setting
 }
 
 interface ColorPoint { rgb: RGB; lab: RGB; weight: number }
-function adaptivePalette(data: Uint8ClampedArray, count: number, importance?: Float32Array): RGB[] {
+function adaptivePalette(data: Uint8ClampedArray, count: number, importance?: Float32Array, coherence?: Float32Array): RGB[] {
   const bins = new Map<number, number[]>();
   for (let i = 0; i < data.length; i += 4) {
     if (!data[i + 3]) continue;
     const key = (data[i] >> 3) << 10 | (data[i + 1] >> 3) << 5 | data[i + 2] >> 3;
-    const weight = 1 + (importance?.[i / 4] ?? 0) * 8;
+    // Flat interiors and coherent lines train the palette; antialiased mixtures
+    // must not receive more palette capacity just because their contrast is high.
+    const stable = coherence?.[i / 4] ?? 1;
+    const weight = (.03 + .97 * stable * stable) * (1 + (importance?.[i / 4] ?? 0) * 4);
     const bin = bins.get(key);
     if (bin) { bin[0] += data[i] * weight; bin[1] += data[i + 1] * weight; bin[2] += data[i + 2] * weight; bin[3] += weight; }
     else bins.set(key, [data[i] * weight, data[i + 1] * weight, data[i + 2] * weight, weight]);
@@ -125,6 +130,17 @@ function adaptivePalette(data: Uint8ClampedArray, count: number, importance?: Fl
       sum[3] += p.weight;
     }
     palette = sums.map((s, i) => s[3] ? [Math.round(s[0] / s[3]), Math.round(s[1] / s[3]), Math.round(s[2] / s[3])] : palette[i]);
+  }
+  if (coherence && palette.length > 1) {
+    // True black ink and near-white highlights must not be averaged into a large
+    // neighboring brown/mint cluster. Only reserve colors actually in the input.
+    for (const light of [false, true]) {
+      const extremes = points.filter(p => light ? Math.min(...p.rgb) >= 245 : Math.max(...p.rgb) <= 12);
+      const weight = extremes.reduce((sum, p) => sum + p.weight, 0);
+      if (weight < 3) continue;
+      const rgb = [0, 1, 2].map(k => Math.round(extremes.reduce((sum, p) => sum + p.rgb[k] * p.weight, 0) / weight)) as RGB;
+      palette[nearest(oklab(rgb), palette.map(oklab))] = rgb;
+    }
   }
   return palette.sort((a, b) => oklab(a)[0] - oklab(b)[0]);
 }
@@ -176,17 +192,22 @@ export function pixelate(source: PixelSource, settings: Settings): PixelResult {
   const size = Math.max(16, Math.min(512, Math.round(settings.size)));
   const { width, height } = dimensions(source.width, source.height, size);
   if (settings.method === 'structure') {
-    // Analyze before the final reduction, at up to four samples per output cell.
-    // Palette extraction and feature detection see fine lines before they are lost.
-    const workWidth = Math.min(source.width, width * 4), workHeight = Math.min(source.height, height * 4);
+    // Keep up to eight samples per cell: a 2–3 source-pixel ink line must not
+    // already have turned gray before transition ownership is analyzed.
+    // The 2048 edge cap keeps the analysis buffer at the previous memory ceiling.
+    const analysisScale = Math.min(8, 2048 / Math.max(width, height));
+    const workWidth = Math.min(source.width, Math.round(width * analysisScale)), workHeight = Math.min(source.height, Math.round(height * analysisScale));
     const working = areaSample(source, workWidth, workHeight, settings.transparent);
     adjust(working, workWidth, workHeight, { ...settings, detail: false });
     const features = detectFeatures(working, workWidth, workHeight);
     const palette = settings.palette === 'adaptive'
-      ? adaptivePalette(working, Math.max(2, Math.min(256, settings.colors)), features.importance)
+      ? adaptivePalette(working, Math.max(2, Math.min(256, settings.colors)), features.importance, features.coherence)
       : PALETTES[settings.palette];
+    const originalWorking = working.slice();
     quantize(working, workWidth, workHeight, palette, { ...settings, dither: 'none' });
+    resolveTransitions(originalWorking, working, workWidth, workHeight, palette, features);
     const mapped = mapRegions(working, workWidth, workHeight, width, height, palette, features, settings.lineProtection);
+    regularizeBoundaries(mapped, width, height, palette, settings.edgeSmoothing ?? 65);
     cleanRegions(mapped, width, height, palette, settings.cleanup);
     return { data: mapped.data, width, height, palette, duration: performance.now() - start };
   }
