@@ -1,0 +1,19 @@
+[package]
+name = "shinkou-pixel"
+version = "0.2.0"
+description = "Local-first image to pixel art studio"
+authors = ["Shinkou"]
+edition = "2021"
+rust-version = "1.77.2"
+
+[lib]
+name = "shinkou_pixel_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
