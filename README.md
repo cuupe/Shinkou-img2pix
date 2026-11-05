@@ -180,8 +180,8 @@ $$
 
 $$
 \ell(c)=\begin{cases}
-c/12.92,&c\le 0.04045,\\
-((c+0.055)/1.055)^{2.4},&c>0.04045.
+c/12.92, & c \le 0.04045, \\
+((c+0.055)/1.055)^{2.4}, & c > 0.04045.
 \end{cases}
 $$
 
@@ -189,7 +189,7 @@ $$
 
 $$
 \bar\alpha_j=\frac{\sum_i a_{ij}\alpha_i}{A_j},\qquad
-\bar c_j=\ell^{-1}\left(\frac{\sum_i a_{ij}\alpha_i\ell(c_i)}{\sum_i a_{ij}\alpha_i}\right),\qquad
+\bar c_j=\ell^{-1}\left( \frac{\sum_i a_{ij}\alpha_i\ell(c_i)}{\sum_i a_{ij}\alpha_i} \right),\qquad
 \alpha_j^{out}=\mathbf1[\bar\alpha_j\ge0.5].
 $$
 
@@ -200,7 +200,7 @@ $$
 亮度、对比度、饱和度参数分别记为 $b,k,t$，亮度参考值 $Y=0.2126C_R+0.7152C_G+0.0722C_B$。每个通道调整为：
 
 $$
-C'_r=\mathrm{clip}_{[0,255]}\left(\left[Y+(C_r-Y)(1+t/100)-127.5\right](1+k/100)^2+127.5+2.55b\right).
+C'_r=\mathrm{clip}_{[0,255]}\left( \left[ Y+(C_r-Y)(1+t/100)-127.5 \right](1+k/100)^2+127.5+2.55b \right).
 $$
 
 照片模式的细节增强先计算 $C_r\leftarrow\mathrm{clip}(C_r+0.45(C_r-\mu_{4,r}))$，其中 $\mu_4$ 为有效不透明四邻域的均值。结构保真不使用该锐化，细节由下述特征与区域规则处理。
@@ -210,13 +210,13 @@ $$
 在分析图上令 $L_p=Y_p/255$。沿水平、垂直及两条对角线，以半径 1、2 取得相对的有效不透明像素 $a,b$，令 $d_a=L_a-L_p$、$d_b=L_b-L_p$。仅在 $d_ad_b>0$ 时计算响应：
 
 $$
-R_p=\min\left(1,\max_{a,b}\frac{[\min(|d_a|,|d_b|)-0.025]_+}{0.22}\left[1-\frac{|L_a-L_b|}{0.35}\right]_+\right).
+R_p=\min\left( 1, \max_{a,b}\frac{[\min(|d_a|,|d_b|)-0.025]_+}{0.22}\left[ 1-\frac{|L_a-L_b|}{0.35} \right]_+ \right).
 $$
 
 没有有效配对时 $R_p=0$，$[x]_+=\max(0,x)$。定义同亮度邻居支持 $U_p=\max_{q\in\mathcal N_8(p),\,|L_p-L_q|<0.12}R_q$，无支持时为 0；重要度为：
 
 $$
-I_p=\max\left(0.4R_p,\min(R_p,U_p),\mathbf1[R_p>0.9]R_p\right).
+I_p=\max\left( 0.4R_p,\min(R_p,U_p),\mathbf1[R_p>0.9]R_p \right).
 $$
 
 区域一致性 $S_p$ 是有效不透明八邻域中满足 $\|C_p-C_q\|_\infty<20$ 的比例；无有效邻居时取 1。相对两侧同向变化用于区分细线和普通色块边界，强孤立响应仍可保留眼部高光。实现见 [structure.ts](src/engine/structure.ts)。
@@ -226,7 +226,7 @@ $$
 自适应色板先按每通道 5 位建立颜色直方图。设过渡色保留参数 $\rho=\mathrm{clip}_{[0,1]}(\text{retention}/100)$，每个分析像素的直方图权重为：
 
 $$
-w_p=\left\{0.015+0.985\left[\rho^2+(1-\rho^2)S_p^{4-2\rho}\right]\right\}(1+4I_p).
+w_p=\left\lbrace 0.015+0.985\left[ \rho^2+(1-\rho^2)S_p^{4-2\rho} \right] \right\rbrace(1+4I_p).
 $$
 
 在 Oklab 最大加权方差轴上按权重中位数递归划分，直到达到颜色预算或无法继续分裂。随后执行两轮加权 Lloyd 优化：
@@ -241,22 +241,22 @@ $$
 Oklab 变换将线性 RGB 映射为 LMS，逐通道开立方，再映射为 $(L,a,b)$：
 
 $$
-\begin{pmatrix}l\\m\\s\end{pmatrix}=
+\begin{pmatrix} l \\ m \\ s \end{pmatrix}=
 \begin{pmatrix}
-0.4122214708&0.5363325363&0.0514459929\\
-0.2119034982&0.6806995451&0.1073969566\\
-0.0883024619&0.2817188376&0.6299787005
+0.4122214708 & 0.5363325363 & 0.0514459929 \\
+0.2119034982 & 0.6806995451 & 0.1073969566 \\
+0.0883024619 & 0.2817188376 & 0.6299787005
 \end{pmatrix}\ell(C/255),
 $$
 
 $$
 \mathrm{Lab}(C)=
 \begin{pmatrix}
-0.2104542553&0.7936177850&-0.0040720468\\
-1.9779984951&-2.4285922050&0.4505937099\\
-0.0259040371&0.7827717662&-0.8086757660
+0.2104542553 & 0.7936177850 & -0.0040720468 \\
+1.9779984951 & -2.4285922050 & 0.4505937099 \\
+0.0259040371 & 0.7827717662 & -0.8086757660
 \end{pmatrix}
-\begin{pmatrix}\sqrt[3]{l}\\\sqrt[3]{m}\\\sqrt[3]{s}\end{pmatrix}.
+\begin{pmatrix} \sqrt[3]{l} \\ \sqrt[3]{m} \\ \sqrt[3]{s} \end{pmatrix}.
 $$
 
 输入通道先钳位并四舍五入为字节。量化使用上述 Oklab 欧氏距离的最近色，而聚类中心在 RGB 中更新；这是一种有限轮次的近似优化。
@@ -275,7 +275,7 @@ $$
 同时在线性光空间估计 $\tau_\ell$，将混色重新编码为 sRGB 后计算残差；若它更小且 $\tau_\ell\in[0.04,0.96]$，采用该估计。要求最终 $\tau\in[0.04,0.96]$、$\sqrt e<14$。在有效候选对中取残差最小者，并计算：
 
 $$
-Q=\left(1-\frac{\sqrt e}{14}\right)\left(0.5+\min(\tau,1-\tau)\right)(1-0.4S_p).
+Q=\left( 1-\frac{\sqrt e}{14} \right)\left( 0.5+\min(\tau,1-\tau) \right)(1-0.4S_p).
 $$
 
 仅在 $Q\ge\rho$ 时，将像素归为 $A$（$\tau<0.5$）或 $B$。归并不产生中间颜色，也不使用随机删除；$\rho=1$ 时直接关闭该归并阶段。稳定内区会提前跳过。完整核心筛选、重心约束与提前跳过规则见 [transitions.ts](src/engine/transitions.ts)。
@@ -285,7 +285,7 @@ $$
 对最终格子 $j$ 和颜色区域 $k$，令 $f_{jk}$ 为有效覆盖中的面积比例，$g_{jk}$ 为按 $\exp[-5(\Delta x^2+\Delta y^2)]$ 加权并归一化的中心占比，$M_{jk}$ 与 $\bar I_{jk}$ 分别为该区域在格子内的最大、面积加权平均重要度。线条保护强度 $\eta=\mathrm{clip}_{[0,1]}(\text{lineProtection}/100)$。区域得分为：
 
 $$
-T_{jk}=0.85f_{jk}+0.15g_{jk}+1.8\eta\sqrt{0.25M_{jk}+0.75\bar I_{jk}}(1-f_{jk})\min\left(1,\frac{f_{jk}}{0.18}\right).
+T_{jk}=0.85f_{jk}+0.15g_{jk}+1.8\eta\sqrt{0.25M_{jk}+0.75\bar I_{jk}}(1-f_{jk})\min\left( 1,\frac{f_{jk}}{0.18} \right).
 $$
 
 偏移 $\Delta x,\Delta y$ 按格子宽高归一化。每格选择最高分的已有色板颜色，保留至多四个候选供轮廓处理；不透明覆盖不足 0.5 的格子保持透明。该步骤不会对不同区域颜色再次求 RGB 均值。
@@ -308,8 +308,8 @@ $$
 Bayer 有序抖动先对 RGB 加入同一偏移，再匹配最近色：
 
 $$
-\delta_{xy}=90d\left(\frac{B_{y\bmod4,x\bmod4}}{16}-0.46875\right),\qquad
-B=\begin{pmatrix}0&8&2&10\\12&4&14&6\\3&11&1&9\\15&7&13&5\end{pmatrix},
+\delta_{xy}=90d\left( \frac{B_{y \bmod 4, x \bmod 4}}{16}-0.46875 \right),\qquad
+B=\begin{pmatrix} 0 & 8 & 2 & 10 \\ 12 & 4 & 14 & 6 \\ 3 & 11 & 1 & 9 \\ 15 & 7 & 13 & 5 \end{pmatrix},
 $$
 
 其中 $d=\text{ditherAmount}/100$。Floyd–Steinberg 使用蛇形扫描，将当前 RGB 量化误差乘以 $d$，按 $7/16,3/16,5/16,1/16$ 分配给前方、下一行后方、下一行同列、下一行前方，跳过透明像素。该阶段依赖已处理邻居，当前保留在 CPU 上顺序执行。
