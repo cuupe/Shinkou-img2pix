@@ -1,0 +1,378 @@
+{
+  "schemaVersion": 1,
+  "appVersion": "0.8.0",
+  "baselineCommit": "e4875960663dd3374677d36cd2d8ebc6161772c0",
+  "source": {
+    "path": "public/illustration.png",
+    "sha256": "8b74e23ae5b3c491d55018984df16deea4fbea5d47dd6b2ec6fda32035964bf8"
+  },
+  "referenceProvenance": "Built-in imagegen with public/illustration.png as reference; the selected 32px concept is a second imagegen edit of the first normalized 32px reference to improve native-size legibility. Not an integrated application model or a native-grid prediction.",
+  "entries": [
+    {
+      "size": 64,
+      "rawSize": [
+        1254,
+        1254
+      ],
+      "gridSize": [
+        64,
+        64
+      ],
+      "baselineColors": 32,
+      "referenceColors": 30,
+      "palette": [
+        [
+          65,
+          27,
+          49
+        ],
+        [
+          88,
+          32,
+          52
+        ],
+        [
+          106,
+          28,
+          51
+        ],
+        [
+          46,
+          69,
+          91
+        ],
+        [
+          121,
+          54,
+          66
+        ],
+        [
+          84,
+          84,
+          111
+        ],
+        [
+          149,
+          69,
+          80
+        ],
+        [
+          149,
+          94,
+          85
+        ],
+        [
+          152,
+          97,
+          88
+        ],
+        [
+          180,
+          78,
+          94
+        ],
+        [
+          101,
+          116,
+          151
+        ],
+        [
+          104,
+          119,
+          154
+        ],
+        [
+          105,
+          121,
+          156
+        ],
+        [
+          188,
+          84,
+          98
+        ],
+        [
+          172,
+          122,
+          108
+        ],
+        [
+          231,
+          105,
+          108
+        ],
+        [
+          222,
+          114,
+          120
+        ],
+        [
+          238,
+          121,
+          126
+        ],
+        [
+          240,
+          124,
+          129
+        ],
+        [
+          123,
+          189,
+          192
+        ],
+        [
+          233,
+          167,
+          137
+        ],
+        [
+          238,
+          178,
+          115
+        ],
+        [
+          238,
+          177,
+          165
+        ],
+        [
+          251,
+          245,
+          237
+        ],
+        [
+          244,
+          188,
+          120
+        ],
+        [
+          249,
+          182,
+          178
+        ],
+        [
+          248,
+          197,
+          119
+        ],
+        [
+          221,
+          209,
+          203
+        ],
+        [
+          225,
+          214,
+          210
+        ],
+        [
+          251,
+          207,
+          183
+        ],
+        [
+          245,
+          212,
+          185
+        ],
+        [
+          248,
+          225,
+          204
+        ]
+      ],
+      "normalization": "Browser canvas nearest-neighbor resampling, then the application Oklab nearest-color quantizer with the exact baseline palette; no dithering or structural postprocessing.",
+      "source": "ai-reference-64-raw.png",
+      "nativeReference": "ai-reference-64-grid.png"
+    },
+    {
+      "size": 32,
+      "rawSize": [
+        1254,
+        1254
+      ],
+      "gridSize": [
+        32,
+        32
+      ],
+      "baselineColors": 31,
+      "referenceColors": 23,
+      "palette": [
+        [
+          70,
+          26,
+          48
+        ],
+        [
+          96,
+          38,
+          55
+        ],
+        [
+          55,
+          61,
+          82
+        ],
+        [
+          71,
+          80,
+          105
+        ],
+        [
+          122,
+          59,
+          69
+        ],
+        [
+          93,
+          96,
+          121
+        ],
+        [
+          129,
+          85,
+          80
+        ],
+        [
+          152,
+          70,
+          81
+        ],
+        [
+          150,
+          94,
+          85
+        ],
+        [
+          177,
+          78,
+          92
+        ],
+        [
+          101,
+          116,
+          151
+        ],
+        [
+          104,
+          119,
+          154
+        ],
+        [
+          184,
+          82,
+          96
+        ],
+        [
+          148,
+          111,
+          103
+        ],
+        [
+          251,
+          245,
+          237
+        ],
+        [
+          193,
+          98,
+          103
+        ],
+        [
+          214,
+          106,
+          113
+        ],
+        [
+          172,
+          138,
+          124
+        ],
+        [
+          231,
+          105,
+          108
+        ],
+        [
+          225,
+          115,
+          121
+        ],
+        [
+          237,
+          121,
+          126
+        ],
+        [
+          240,
+          124,
+          129
+        ],
+        [
+          242,
+          152,
+          151
+        ],
+        [
+          231,
+          167,
+          137
+        ],
+        [
+          166,
+          191,
+          187
+        ],
+        [
+          237,
+          179,
+          115
+        ],
+        [
+          246,
+          183,
+          176
+        ],
+        [
+          245,
+          191,
+          120
+        ],
+        [
+          215,
+          201,
+          195
+        ],
+        [
+          225,
+          214,
+          210
+        ],
+        [
+          250,
+          208,
+          183
+        ],
+        [
+          248,
+          225,
+          204
+        ]
+      ],
+      "normalization": "Browser canvas nearest-neighbor resampling, then the application Oklab nearest-color quantizer with the exact baseline palette; no dithering or structural postprocessing.",
+      "source": "ai-reference-32-v2-raw.png",
+      "nativeReference": "ai-reference-32-grid.png"
+    }
+  ],
+  "hashes": {
+    "ai-reference-32-raw.png": "fc05f4d3b9fd6f26b9ac0bcc5640061be6f44120d593697c42924f1b77ada070",
+    "ai-reference-32-v2-raw.png": "5a38924e39c45451e51500420cfd90a4dbf4d17953c2ac7d0ab30bf52abbd65f",
+    "ai-reference-64-raw.png": "8e42f4df75808d05dd93bd4b912d0ce372dffd0ae5332175378bc0af3203fec8",
+    "ai-reference-64-grid.png": "533be403b9d975218792af55b4753c27544337b87229b1dcfffd73f3d7254a40",
+    "ai-reference-32-grid.png": "f09b7593195574ca7402c4129dd79eea8ccfa325f1f6edb570dfeb594a859197",
+    "comparison.png": "9e131cb92307f75ccc06ed9d9acff002746418b5bc14dc2ef2a15576277eefb1",
+    "face-64-comparison.png": "97346d66a250c1307dc171370fc5fe4b6f09970b18dab3b6656fb060ff7c95bb",
+    "face-32-comparison.png": "fd35dad6541e11e3d09a4814fa73b56b792fe47399b2ff893d38ef35314be0c5"
+  }
+}

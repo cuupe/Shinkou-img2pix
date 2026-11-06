@@ -11,6 +11,7 @@ export interface Settings {
   aiStrength: number;
   lowResolution: 'reconstruct' | 'source';
   outlineRetention: number;
+  pixelClarity: number;
   semanticDetail: number;
   cleanup: number;
   size: number;
@@ -25,7 +26,17 @@ export interface Settings {
   transparent: boolean;
 }
 export interface PixelSource { data: Uint8ClampedArray; width: number; height: number }
-export interface SemanticFace { points: [number, number, number][]; box: [number, number, number, number]; highlights?: [number, number][]; highlightColors?: RGB[] }
+export interface SemanticEye {
+  index: number;
+  iris: RGB;
+  irisLight: RGB;
+  ink: RGB;
+  white?: RGB;
+  position: [number, number];
+  bounds: [number, number, number, number];
+}
+export interface SemanticMouth { path: [number, number][]; ink: RGB; background: RGB; bounds: [number, number, number, number] }
+export interface SemanticFace { points: [number, number, number][]; box: [number, number, number, number]; highlights?: [number, number][]; highlightColors?: RGB[]; eyes?: SemanticEye[]; mouth?: SemanticMouth }
 export interface ExecutionInfo {
   backend: 'gpu' | 'cpu';
   device?: string;
@@ -41,7 +52,7 @@ export interface WorkerResponse { id: number; result?: PixelResult; error?: stri
 export const DEFAULT_SETTINGS: Settings = {
   backend: 'auto',
   method: 'structure', lineProtection: 75, edgeSmoothing: 65, transitionRetention: 25, regionCleanup: 0, aiStrength: 0, cleanup: 45,
-  lowResolution: 'reconstruct', outlineRetention: 55, semanticDetail: 75,
+  lowResolution: 'reconstruct', outlineRetention: 55, pixelClarity: 70, semanticDetail: 75,
   size: 160, colors: 32, palette: 'adaptive', brightness: 0, contrast: 0,
   saturation: 0, detail: true, dither: 'none', ditherAmount: 45, transparent: true,
 };

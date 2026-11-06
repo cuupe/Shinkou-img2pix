@@ -1,0 +1,848 @@
+{
+  "schemaVersion": 1,
+  "appVersion": "0.8.0",
+  "source": {
+    "path": "public/illustration.png",
+    "sha256": "8b74e23ae5b3c491d55018984df16deea4fbea5d47dd6b2ec6fda32035964bf8"
+  },
+  "candidateLabel": "Candidate",
+  "candidates": {},
+  "records": [
+    {
+      "width": 64,
+      "height": 64,
+      "settings": {
+        "backend": "cpu",
+        "method": "structure",
+        "lineProtection": 75,
+        "edgeSmoothing": 65,
+        "transitionRetention": 25,
+        "regionCleanup": 0,
+        "aiStrength": 0,
+        "cleanup": 45,
+        "lowResolution": "reconstruct",
+        "outlineRetention": 55,
+        "semanticDetail": 75,
+        "size": 64,
+        "colors": 32,
+        "palette": "adaptive",
+        "brightness": 0,
+        "contrast": 0,
+        "saturation": 0,
+        "detail": true,
+        "dither": "none",
+        "ditherAmount": 45,
+        "transparent": true
+      },
+      "baseline": {
+        "palette": [
+          [
+            65,
+            27,
+            49
+          ],
+          [
+            88,
+            32,
+            52
+          ],
+          [
+            106,
+            28,
+            51
+          ],
+          [
+            46,
+            69,
+            91
+          ],
+          [
+            121,
+            54,
+            66
+          ],
+          [
+            84,
+            84,
+            111
+          ],
+          [
+            149,
+            69,
+            80
+          ],
+          [
+            149,
+            94,
+            85
+          ],
+          [
+            152,
+            97,
+            88
+          ],
+          [
+            180,
+            78,
+            94
+          ],
+          [
+            101,
+            116,
+            151
+          ],
+          [
+            104,
+            119,
+            154
+          ],
+          [
+            105,
+            121,
+            156
+          ],
+          [
+            188,
+            84,
+            98
+          ],
+          [
+            172,
+            122,
+            108
+          ],
+          [
+            231,
+            105,
+            108
+          ],
+          [
+            222,
+            114,
+            120
+          ],
+          [
+            238,
+            121,
+            126
+          ],
+          [
+            240,
+            124,
+            129
+          ],
+          [
+            123,
+            189,
+            192
+          ],
+          [
+            233,
+            167,
+            137
+          ],
+          [
+            238,
+            178,
+            115
+          ],
+          [
+            238,
+            177,
+            165
+          ],
+          [
+            251,
+            245,
+            237
+          ],
+          [
+            244,
+            188,
+            120
+          ],
+          [
+            249,
+            182,
+            178
+          ],
+          [
+            248,
+            197,
+            119
+          ],
+          [
+            221,
+            209,
+            203
+          ],
+          [
+            225,
+            214,
+            210
+          ],
+          [
+            251,
+            207,
+            183
+          ],
+          [
+            245,
+            212,
+            185
+          ],
+          [
+            248,
+            225,
+            204
+          ]
+        ],
+        "durationMs": 2602.600000000093,
+        "execution": {
+          "backend": "cpu",
+          "gpuStages": [],
+          "timings": {
+            "prepare": 76.90000000037253,
+            "palette": 11,
+            "reconstruction": 578.8999999999069,
+            "semantic": 1488.1000000000931
+          },
+          "semantic": {
+            "backend": "wasm",
+            "model": "Anime Face HRNetV2-W18",
+            "faces": 1,
+            "duration": 1488.1000000000931,
+            "cached": false
+          },
+          "reason": "已选择 CPU"
+        }
+      }
+    },
+    {
+      "width": 48,
+      "height": 48,
+      "settings": {
+        "backend": "cpu",
+        "method": "structure",
+        "lineProtection": 75,
+        "edgeSmoothing": 65,
+        "transitionRetention": 25,
+        "regionCleanup": 0,
+        "aiStrength": 0,
+        "cleanup": 45,
+        "lowResolution": "reconstruct",
+        "outlineRetention": 55,
+        "semanticDetail": 75,
+        "size": 48,
+        "colors": 32,
+        "palette": "adaptive",
+        "brightness": 0,
+        "contrast": 0,
+        "saturation": 0,
+        "detail": true,
+        "dither": "none",
+        "ditherAmount": 45,
+        "transparent": true
+      },
+      "baseline": {
+        "palette": [
+          [
+            76,
+            28,
+            49
+          ],
+          [
+            41,
+            71,
+            93
+          ],
+          [
+            114,
+            42,
+            60
+          ],
+          [
+            94,
+            59,
+            68
+          ],
+          [
+            82,
+            87,
+            116
+          ],
+          [
+            146,
+            65,
+            78
+          ],
+          [
+            126,
+            82,
+            80
+          ],
+          [
+            150,
+            94,
+            85
+          ],
+          [
+            178,
+            78,
+            93
+          ],
+          [
+            149,
+            103,
+            94
+          ],
+          [
+            101,
+            116,
+            151
+          ],
+          [
+            186,
+            83,
+            97
+          ],
+          [
+            106,
+            121,
+            155
+          ],
+          [
+            139,
+            118,
+            119
+          ],
+          [
+            174,
+            124,
+            108
+          ],
+          [
+            206,
+            102,
+            109
+          ],
+          [
+            53,
+            167,
+            180
+          ],
+          [
+            231,
+            105,
+            108
+          ],
+          [
+            225,
+            114,
+            120
+          ],
+          [
+            251,
+            245,
+            237
+          ],
+          [
+            240,
+            124,
+            129
+          ],
+          [
+            215,
+            152,
+            135
+          ],
+          [
+            169,
+            187,
+            183
+          ],
+          [
+            234,
+            168,
+            138
+          ],
+          [
+            241,
+            183,
+            118
+          ],
+          [
+            249,
+            181,
+            177
+          ],
+          [
+            247,
+            196,
+            119
+          ],
+          [
+            220,
+            207,
+            201
+          ],
+          [
+            225,
+            214,
+            210
+          ],
+          [
+            251,
+            207,
+            183
+          ],
+          [
+            245,
+            212,
+            185
+          ],
+          [
+            248,
+            226,
+            204
+          ]
+        ],
+        "durationMs": 320,
+        "execution": {
+          "backend": "cpu",
+          "gpuStages": [],
+          "timings": {
+            "prepare": 38.1999999997206,
+            "palette": 4.300000000279397,
+            "reconstruction": 271.6999999997206,
+            "semantic": 0
+          },
+          "semantic": {
+            "backend": "wasm",
+            "model": "Anime Face HRNetV2-W18",
+            "faces": 1,
+            "duration": 0,
+            "cached": true
+          },
+          "reason": "已选择 CPU"
+        }
+      }
+    },
+    {
+      "width": 32,
+      "height": 32,
+      "settings": {
+        "backend": "cpu",
+        "method": "structure",
+        "lineProtection": 75,
+        "edgeSmoothing": 65,
+        "transitionRetention": 25,
+        "regionCleanup": 0,
+        "aiStrength": 0,
+        "cleanup": 45,
+        "lowResolution": "reconstruct",
+        "outlineRetention": 55,
+        "semanticDetail": 75,
+        "size": 32,
+        "colors": 32,
+        "palette": "adaptive",
+        "brightness": 0,
+        "contrast": 0,
+        "saturation": 0,
+        "detail": true,
+        "dither": "none",
+        "ditherAmount": 45,
+        "transparent": true
+      },
+      "baseline": {
+        "palette": [
+          [
+            70,
+            26,
+            48
+          ],
+          [
+            96,
+            38,
+            55
+          ],
+          [
+            55,
+            61,
+            82
+          ],
+          [
+            71,
+            80,
+            105
+          ],
+          [
+            122,
+            59,
+            69
+          ],
+          [
+            93,
+            96,
+            121
+          ],
+          [
+            129,
+            85,
+            80
+          ],
+          [
+            152,
+            70,
+            81
+          ],
+          [
+            150,
+            94,
+            85
+          ],
+          [
+            177,
+            78,
+            92
+          ],
+          [
+            101,
+            116,
+            151
+          ],
+          [
+            104,
+            119,
+            154
+          ],
+          [
+            184,
+            82,
+            96
+          ],
+          [
+            148,
+            111,
+            103
+          ],
+          [
+            251,
+            245,
+            237
+          ],
+          [
+            193,
+            98,
+            103
+          ],
+          [
+            214,
+            106,
+            113
+          ],
+          [
+            172,
+            138,
+            124
+          ],
+          [
+            231,
+            105,
+            108
+          ],
+          [
+            225,
+            115,
+            121
+          ],
+          [
+            237,
+            121,
+            126
+          ],
+          [
+            240,
+            124,
+            129
+          ],
+          [
+            242,
+            152,
+            151
+          ],
+          [
+            231,
+            167,
+            137
+          ],
+          [
+            166,
+            191,
+            187
+          ],
+          [
+            237,
+            179,
+            115
+          ],
+          [
+            246,
+            183,
+            176
+          ],
+          [
+            245,
+            191,
+            120
+          ],
+          [
+            215,
+            201,
+            195
+          ],
+          [
+            225,
+            214,
+            210
+          ],
+          [
+            250,
+            208,
+            183
+          ],
+          [
+            248,
+            225,
+            204
+          ]
+        ],
+        "durationMs": 140.10000000009313,
+        "execution": {
+          "backend": "cpu",
+          "gpuStages": [],
+          "timings": {
+            "prepare": 21.299999999813735,
+            "palette": 2.1000000000931323,
+            "reconstruction": 116.60000000009313,
+            "semantic": 0
+          },
+          "semantic": {
+            "backend": "wasm",
+            "model": "Anime Face HRNetV2-W18",
+            "faces": 1,
+            "duration": 0,
+            "cached": true
+          },
+          "reason": "已选择 CPU"
+        }
+      }
+    },
+    {
+      "width": 160,
+      "height": 160,
+      "settings": {
+        "backend": "cpu",
+        "method": "structure",
+        "lineProtection": 75,
+        "edgeSmoothing": 65,
+        "transitionRetention": 25,
+        "regionCleanup": 0,
+        "aiStrength": 0,
+        "cleanup": 45,
+        "lowResolution": "reconstruct",
+        "outlineRetention": 55,
+        "semanticDetail": 75,
+        "size": 160,
+        "colors": 32,
+        "palette": "adaptive",
+        "brightness": 0,
+        "contrast": 0,
+        "saturation": 0,
+        "detail": true,
+        "dither": "none",
+        "ditherAmount": 45,
+        "transparent": true
+      },
+      "baseline": {
+        "palette": [
+          [
+            59,
+            23,
+            46
+          ],
+          [
+            72,
+            27,
+            50
+          ],
+          [
+            87,
+            26,
+            49
+          ],
+          [
+            108,
+            26,
+            50
+          ],
+          [
+            35,
+            73,
+            94
+          ],
+          [
+            128,
+            53,
+            66
+          ],
+          [
+            78,
+            86,
+            116
+          ],
+          [
+            167,
+            70,
+            86
+          ],
+          [
+            151,
+            94,
+            85
+          ],
+          [
+            99,
+            115,
+            150
+          ],
+          [
+            184,
+            79,
+            95
+          ],
+          [
+            103,
+            118,
+            153
+          ],
+          [
+            106,
+            121,
+            155
+          ],
+          [
+            189,
+            107,
+            102
+          ],
+          [
+            172,
+            122,
+            112
+          ],
+          [
+            230,
+            104,
+            107
+          ],
+          [
+            51,
+            169,
+            182
+          ],
+          [
+            232,
+            106,
+            109
+          ],
+          [
+            236,
+            117,
+            123
+          ],
+          [
+            239,
+            122,
+            126
+          ],
+          [
+            240,
+            125,
+            129
+          ],
+          [
+            239,
+            141,
+            139
+          ],
+          [
+            236,
+            167,
+            137
+          ],
+          [
+            218,
+            183,
+            165
+          ],
+          [
+            241,
+            183,
+            118
+          ],
+          [
+            250,
+            181,
+            177
+          ],
+          [
+            248,
+            197,
+            120
+          ],
+          [
+            204,
+            211,
+            207
+          ],
+          [
+            225,
+            214,
+            210
+          ],
+          [
+            251,
+            207,
+            183
+          ],
+          [
+            245,
+            213,
+            185
+          ],
+          [
+            253,
+            253,
+            251
+          ]
+        ],
+        "durationMs": 876.3999999999069,
+        "execution": {
+          "backend": "cpu",
+          "gpuStages": [],
+          "timings": {
+            "prepare": 386.29999999981374,
+            "palette": 34.39999999990687,
+            "quantize": 137.39999999990687,
+            "transitions": 206.60000000009313,
+            "mapping": 64.09999999962747,
+            "contours": 46.60000000009313
+          },
+          "reason": "已选择 CPU"
+        }
+      }
+    }
+  ],
+  "note": "Visual comparison, not a perceptual quality score. Candidate model identity and training provenance are not verified by this tool."
+}

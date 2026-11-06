@@ -1,7 +1,7 @@
 import type { InferenceSession } from 'onnxruntime-web';
 import type { ExecutionInfo, PixelSource, SemanticFace } from './types';
 import { detectAnimeFaces } from './face-detection';
-import { sourceEyeHighlights } from './semantic-features';
+import { sourceEyeHighlights, sourceEyeDetails, sourceMouthDetail } from './semantic-features';
 import card from '../../public/models/anime-landmarks-model.json';
 
 export interface SemanticAnalysis { faces: SemanticFace[]; info: NonNullable<ExecutionInfo['semantic']> }
@@ -91,7 +91,7 @@ export async function analyzeSemantics(source: PixelSource, cpu: boolean): Promi
       // Reject low-confidence/implausible proposals. No invented face on scenery.
       if (mean >= .55 && points[11][0] < points[19][0] && points[24][1] > Math.min(points[12][1], points[18][1]) && Math.abs(points[12][1] - points[18][1]) < .35 * side / source.height && points.every(p => Number.isFinite(p[0]) && Number.isFinite(p[1]) && p[0] > 0 && p[0] < 1 && p[1] > 0 && p[1] < 1)) {
         const highlights = sourceEyeHighlights(source, points);
-        faces.push({ points, box: [x / small.width, y / small.height, w / small.width, h / small.height], highlights: highlights.map(h => h.position), highlightColors: highlights.map(h => h.color) });
+        faces.push({ points, box: [x / small.width, y / small.height, w / small.width, h / small.height], highlights: highlights.map(h => h.position), highlightColors: highlights.map(h => h.color), eyes: sourceEyeDetails(source, points), mouth: sourceMouthDetail(source, points) });
       }
     } finally { tensor.dispose(); if (output) Object.values(output).forEach(t => t.dispose()); }
   }

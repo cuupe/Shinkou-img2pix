@@ -52,23 +52,25 @@ Shinkou Pixel 是一款基于 Tauri 的图片转像素画桌面应用，主要�
 
 ### 低像素重构
 
-0.8.0 在结构保真模式的 32、48、64 px 下默认启用色块重构：输入区域可以在受约束的网格内调整位置，按最终色板重新组织形状，减少细线挤占整格的情况。本地 HRNetV2 网络定位正面动漫五官，结合原图证据补偿眼睛高光和细嘴线；卡通动物等不适用的素材使用通用色块与短笔画处理。
+0.9.0 在 32、48、64 px 下加入离散主色投票、相近色簇归并与连续结构线筛选，减少区域均值造成的中间色和浅边。本地 HRNetV2 网络定位正面动漫五官，再从原图测量虹膜、眼睑和闭口嘴线，在真实小网格上安排颜色与位置；卡通动物等不适用的素材使用通用色块与短笔画处理。
 
-![64 像素下原有处理与色块重构的实际对比](docs/images/low-resolution-64-comparison.png)
+![64 像素下 0.8 与 0.9 的实际对比](docs/images/low-resolution-upgrade-64.png)
 
-![32 像素下原有处理与色块重构的实际对比](docs/images/low-resolution-32-comparison.png)
+![32 像素下 0.8 与 0.9 的实际对比](docs/images/low-resolution-upgrade-32.png)
 
-同一张内置原图、相同 32 色上限；新模式采用默认描边保留 55、细节补偿 75、五官保真 75。结果未经人工修图，64 px 放大 6 倍、32 px 放大 12 倍展示。启用五官辅助后，可以在色数上限内为原图真实高光重新分配颜色，因此两种模式的具体色板可能不同。
+同一张内置原图、相同 32 色上限；0.9 使用默认结构清晰度 70、描边保留 55、细节补偿 75、五官保真 75。结果未经人工修图，64 px 放大 6 倍、32 px 放大 12 倍展示。可以在色数上限内为原图真实高光和虹膜重新分配颜色，因此两个版本的具体色板可能不同。结构清晰度设为 0 时保留 0.8 的处理。
 
-[48 px 对比](docs/images/low-resolution-48-comparison.png) · [32 px 原尺寸](docs/images/illustration-reconstruct-32.png) · [48 px 原尺寸](docs/images/illustration-reconstruct-48.png) · [64 px 原尺寸](docs/images/illustration-reconstruct-64.png)
+[48 px 升级对比](docs/images/low-resolution-upgrade-48.png) · [32 px 原尺寸](docs/images/illustration-reconstruct-32.png) · [48 px 原尺寸](docs/images/illustration-reconstruct-48.png) · [64 px 原尺寸](docs/images/illustration-reconstruct-64.png)
+
+![结构清晰度的实际对比](docs/images/pixel-clarity-comparison.png)
 
 ### 描边与五官的独立控制
 
 ![描边保留 0、55、100 的实际对比](docs/images/outline-retention-comparison.png)
 
-**描边保留**控制细窄深色线的弱化程度；100 关闭该弱化，但仍使用色块重构。**细节补偿**用于平坦颜色区域内有依据的短小笔画。**五官保真**控制神经定位辅助，0 可关闭。也可将“小尺寸处理”切回“线稿保真”，使用原有流水线。
+**结构清晰度**控制主色色簇、连续结构线及五官占格重建，0 回到原有柔和处理。**描边保留**独立控制细窄深色线的弱化程度；100 关闭该弱化，但仍使用色块重构。**细节补偿**用于平坦区域内有依据的短小笔画。**五官保真**控制神经定位辅助，0 可关闭。也可将“小尺寸处理”切回“线稿保真”，使用原有流水线。
 
-[32 px 五官辅助开关对比](docs/images/semantic-detail-comparison.png) · [算法公式与模型说明](docs/low-resolution-pipeline.md) · [前期方案研究](docs/low-resolution-study.md)
+[32 px 五官辅助开关对比](docs/images/semantic-detail-comparison.png) · [算法公式与模型说明](docs/low-resolution-pipeline.md) · [视觉目标研究](design/low-resolution-targets-2026-11-06/README.md) · [前期方案研究](docs/low-resolution-study.md)
 
 此功能是神经五官定位与几何重构的混合方案，未训练像素画生成模型。极小五官、侧脸、遮挡和复杂画面仍需要取舍；它不保证所有输入都优于原有处理。96 px 及以上继续使用原有流水线。
 
@@ -84,8 +86,8 @@ Shinkou Pixel 是一款基于 Tauri 的图片转像素画桌面应用，主要�
 | 边缘处理 | 线条保护、轮廓规整、过渡色保留、碎点合并 |
 | 区域净化 | 可选 SLIC 超像素分区与主色归并，默认关闭 |
 | AI 结构辅助 | 本地 TEED 神经网络边缘分析、可调保护强度与独立线稿预览，默认关闭 |
-| 低像素重构 | 32–64 px 下的色块位置优化、可调描边与短笔画补偿；默认启用，可切回原有处理 |
-| AI 五官辅助 | 本地 HRNetV2 正面动漫五官定位、源图高光与细嘴线补偿；GPU / CPU 推理及自动回退 |
+| 低像素重构 | 32–64 px 下的离散主色投票、色簇归并与连续结构线筛选；清晰度可调，可回到 0.8 处理 |
+| AI 五官辅助 | 本地 HRNetV2 定位，测量原图虹膜、高光与嘴线并重建五官占格；GPU / CPU 推理及自动回退 |
 | 色彩调整 | 亮度、对比度、饱和度；照片采样模式另提供细节增强与抖动 |
 | 预览 | 原图与结果切换、滑动对比、缩放、平移、像素网格 |
 | 网格取色 | 直接读取结果像素的 HEX、RGB、透明度与行列位置，支持复制 HEX / RGBA |

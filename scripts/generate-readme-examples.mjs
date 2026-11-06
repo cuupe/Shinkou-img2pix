@@ -113,10 +113,16 @@ try {
 
     const low = {};
     for (const size of [64, 48, 32]) {
+      const previous = await convert(illustration, 'public/illustration.png', `illustration-v080-${size}.png`, { size, pixelClarity: 0 });
       const before = await convert(illustration, 'public/illustration.png', `illustration-source-${size}.png`, { size, lowResolution: 'source', semanticDetail: 0 });
       const rebuilt = await convert(illustration, 'public/illustration.png', `illustration-reconstruct-${size}.png`, { size });
       if (records[records.length - 1].semantic?.faces !== 1) throw new Error('Low-resolution example did not use the real facial model');
       low[size] = rebuilt;
+      comparison(`low-resolution-upgrade-${size}.png`, `低像素升级 · ${size} × ${size}`, [
+        { canvas: illustration.canvas, label: '原图', original: true },
+        { canvas: previous, label: '0.8 · 结构清晰度 0' },
+        { canvas: rebuilt, label: '0.9 · 结构清晰度 70' },
+      ], '同一原图、相同 32 色上限、真实本地五官模型；五官颜色预算可不同，输出未经人工修图。', 384);
       comparison(`low-resolution-${size}-comparison.png`, `低像素重构 · ${size} × ${size}`, [
         { canvas: illustration.canvas, label: '原图', original: true },
         { canvas: before, label: '线稿保真 · 原有处理' },
@@ -130,8 +136,13 @@ try {
     ], '固定 32 色上限、五官保真 75，其余参数相同；形状仍由色块重构处理。', 384);
     const noSemantic = await convert(illustration, 'public/illustration.png', 'illustration-semantic-0.png', { size: 32, semanticDetail: 0 });
     comparison('semantic-detail-comparison.png', '五官辅助 · 32 × 32', [
-      { canvas: noSemantic, label: '0 · 通用色块重构' }, { canvas: low[32], label: '75 · 五官辅助与高光预算' },
-    ], '同一张图、相同 32 色上限；启用五官辅助时可在色板预算内为真实高光重新分配颜色。', 384);
+      { canvas: noSemantic, label: '0 · 通用色块重构' }, { canvas: low[32], label: '75 · 原图五官颜色与占格' },
+    ], '同一张图、相同 32 色上限；可在预算内为原图高光、虹膜重新分配颜色。', 384);
+    const clarity100 = await convert(illustration, 'public/illustration.png', 'illustration-clarity-100.png', { size: 64, pixelClarity: 100 });
+    const legacy64 = await convert(illustration, 'public/illustration.png', 'illustration-clarity-0.png', { size: 64, pixelClarity: 0 });
+    comparison('pixel-clarity-comparison.png', '结构清晰度 · 64 × 64', [
+      { canvas: legacy64, label: '0 · 0.8 柔和处理' }, { canvas: low[64], label: '70 · 默认' }, { canvas: clarity100, label: '100 · 更强的色块归并' },
+    ], '描边保留 55、五官保真 75、32 色上限；较高清晰度可能简化低对比阴影。', 384);
 
     const landscape = await input('lighthouse.png');
     const landscape128 = await convert(landscape, 'public/lighthouse.png', 'landscape-128.png', { method: 'sample', size: 128, dither: 'floyd', ditherAmount: 35 });

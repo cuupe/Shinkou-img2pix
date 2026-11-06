@@ -1,5 +1,7 @@
 import { labAt } from './slic';
 import type { RGB, SemanticFace, Settings } from './types';
+import { reconstructClusters, restoreStructuralSeams } from './pixel-clusters';
+import { adjustedSemanticColor, refineSemanticGlyphs } from './semantic-reconstruction';
 
 const clamp = (v: number, low: number, high: number) => Math.max(low, Math.min(high, v));
 const distance = (a: ArrayLike<number>, ai: number, b: ArrayLike<number>, bi: number) => (a[ai] - b[bi]) ** 2 + (a[ai + 1] - b[bi + 1]) ** 2 + (a[ai + 2] - b[bi + 2]) ** 2;
@@ -46,10 +48,10 @@ function morphology(input: Float32Array, width: number, height: number, maximum:
 export function reconstruct(data: Uint8ClampedArray, sw: number, sh: number, width: number, height: number, palette: RGB[], settings: Settings, faces: SemanticFace[] = []) {
   const output = new Uint8ClampedArray(width * height * 4);
   if (!palette.length) return output;
-  const n = width * height, samples = sw * sh, sx = sw / width, sy = sh / height;
+  const n = width * height, samples = sw * sh, sx = sw / width, sy = sh / height, clarity = clamp((settings.pixelClarity ?? 70) / 100, 0, 1);
   const raw = new Float32Array(samples * 3), packedPalette = new Uint8ClampedArray(palette.length * 4);
   for (let p = 0; p < samples; p++) if (data[p * 4 + 3]) raw.set(labAt(data, p), p * 3);
-  reserveHighlightColor(raw, data, palette, settings, faces);
+  reserveSemanticColors(raw, data, palette, settings, faces);
   palette.forEach((rgb, k) => packedPalette.set([...rgb, 255], k * 4));
   const colors = palette.map((_, k) => labAt(packedPalette, k));
   const working = bilateral(raw, sw, sh, 2, 12, data);
@@ -66,7 +68,7 @@ export function reconstruct(data: Uint8ClampedArray, sw: number, sh: number, wid
   for (let p = 0; p < samples; p++) {
     const chroma = Math.hypot(working[p * 3 + 1], working[p * 3 + 2]);
     const ridge = clamp((closed[p] - light[p] - 3) / 18, 0, 1) * clamp((chroma - 8) / 15, 0, 1);
-    working[p * 3] += soften * (1 - protectedMap[p]) * ridge * (closed[p] - light[p]);
+    working[p * 3] += soften * (1 - clarity * .55) * (1 - protectedMap[p]) * ridge * (closed[p] - light[p]);
   }
   const cx = new Float32Array(n), cy = new Float32Array(n), ox = new Float32Array(n), oy = new Float32Array(n);
   const means = new Float32Array(n * 3), mass = new Float64Array(n), coverage = new Float32Array(n), tileMass = new Uint32Array(n);
@@ -114,38 +116,49 @@ export function reconstruct(data: Uint8ClampedArray, sw: number, sh: number, wid
     }
   }
   const labels = Int16Array.from({ length: n }, (_, k) => coverage[k] >= .5 ? nearest(means, k * 3, colors) : -1);
-  restoreCompactStrokes(labels, raw, data, sw, sh, width, height, colors, clamp(settings.lineProtection / 100, 0, 1));
-  if (semantic > 0) refineFeatures(labels, raw, sw, sh, width, height, colors, faces, semantic);
+  reconstructClusters(labels, working, data, sw, sh, width, height, assignments, colors, clarity, protectedMap);
+  restoreStructuralSeams(labels, raw, closed, light, data, sw, sh, width, height, colors, (settings.outlineRetention ?? 55) / 100, clarity, protectedMap, faces);
+  restoreCompactStrokes(labels, raw, data, sw, sh, width, height, colors, clamp(settings.lineProtection / 100, 0, 1), clarity);
+  if (semantic > 0) {
+    refineFeatures(labels, raw, sw, sh, width, height, colors, faces, semantic, clarity);
+    refineSemanticGlyphs(labels, raw, sw, sh, width, height, colors, faces, settings);
+  }
   labels.forEach((k, p) => { if (k >= 0) output.set([...palette[k], 255], p * 4); });
   return output;
 }
 
-function reserveHighlightColor(raw: Float32Array, data: Uint8ClampedArray, palette: RGB[], settings: Settings, faces: SemanticFace[]) {
+function reserveSemanticColors(raw: Float32Array, data: Uint8ClampedArray, palette: RGB[], settings: Settings, faces: SemanticFace[]) {
   if (settings.palette !== 'adaptive' || palette.length < 8 || settings.semanticDetail < 30) return;
-  const samples = faces.flatMap(face => face.highlightColors ?? []); if (!samples.length) return;
-  const rgb = [0, 1, 2].map(k => samples.reduce((s, c) => s + c[k], 0) / samples.length) as RGB;
-  const luma = rgb[0] * .2126 + rgb[1] * .7152 + rgb[2] * .0722, contrast = (1 + settings.contrast / 100) ** 2;
-  const adjusted = rgb.map(v => Math.round(clamp((luma + (v - luma) * (1 + settings.saturation / 100) - 127.5) * contrast + 127.5 + settings.brightness * 2.55, 0, 255))) as RGB;
-  const packed = new Uint8ClampedArray((palette.length + 1) * 4); palette.forEach((c, k) => packed.set([...c, 255], k * 4)); packed.set([...adjusted, 255], palette.length * 4);
-  const labs = palette.map((_, k) => labAt(packed, k)), target = labAt(packed, palette.length);
-  if (distance(labs[nearest(target, 0, labs)], 0, target, 0) < 16) return;
-  const frequency = new Uint32Array(palette.length);
-  for (let p = 0; p < data.length / 4; p++) if (data[p * 4 + 3]) frequency[nearest(raw, p * 3, labs)]++;
-  let best = -1, cost = Infinity;
-  for (let k = 0; k < palette.length; k++) {
-    let neighbor = Infinity;
-    for (let j = 0; j < palette.length; j++) if (j !== k) neighbor = Math.min(neighbor, distance(labs[k], 0, labs[j], 0));
-    const loss = frequency[k] * neighbor;
-    if (loss < cost) { cost = loss; best = k; }
+  const samples = faces.flatMap(face => face.highlightColors ?? []);
+  const targets: RGB[] = samples.length ? [[0, 1, 2].map(k => samples.reduce((s, c) => s + c[k], 0) / samples.length) as RGB] : [];
+  if ((settings.pixelClarity ?? 70) > 0) for (const face of faces) for (const eye of face.eyes ?? []) targets.push(eye.iris, eye.irisLight);
+  const reserved = new Set<number>(), limit = Math.max(1, Math.min(4, Math.floor(palette.length / 4)));
+  for (const rgb of targets) {
+    if (reserved.size >= limit) break;
+    const adjusted = adjustedSemanticColor(rgb, settings);
+    const packed = new Uint8ClampedArray((palette.length + 1) * 4); palette.forEach((c, k) => packed.set([...c, 255], k * 4)); packed.set([...adjusted, 255], palette.length * 4);
+    const labs = palette.map((_, k) => labAt(packed, k)), target = labAt(packed, palette.length);
+    const existing = nearest(target, 0, labs);
+    if (distance(labs[existing], 0, target, 0) < ((settings.pixelClarity ?? 70) > 0 ? 36 : 16)) { reserved.add(existing); continue; }
+    const frequency = new Uint32Array(palette.length);
+    for (let p = 0; p < data.length / 4; p++) if (data[p * 4 + 3]) frequency[nearest(raw, p * 3, labs)]++;
+    let best = -1, cost = Infinity;
+    for (let k = 0; k < palette.length; k++) {
+      if (reserved.has(k)) continue;
+      let neighbor = Infinity;
+      for (let j = 0; j < palette.length; j++) if (j !== k) neighbor = Math.min(neighbor, distance(labs[k], 0, labs[j], 0));
+      const loss = frequency[k] * neighbor;
+      if (loss < cost) { cost = loss; best = k; }
+    }
+    if (best >= 0) { palette[best] = adjusted; reserved.add(best); }
   }
-  if (best >= 0) palette[best] = adjusted;
 }
 
 // A compact, thin mark surrounded by a stable color field can deserve one
 // connected pixel stroke even when it is not a human face (cartoon muzzles,
 // small symbols). Long boundary networks and mixed-color neighborhoods fail
 // these tests. The stroke uses a tinted palette color, not compulsory black.
-function restoreCompactStrokes(labels: Int16Array, lab: Float32Array, rgba: Uint8ClampedArray, sw: number, sh: number, width: number, height: number, palette: RGB[], strength: number) {
+function restoreCompactStrokes(labels: Int16Array, lab: Float32Array, rgba: Uint8ClampedArray, sw: number, sh: number, width: number, height: number, palette: RGB[], strength: number, clarity: number) {
   if (strength <= 0) return;
   const sx = sw / width, sy = sh / height, light = Float32Array.from({ length: sw * sh }, (_, p) => lab[p * 3]);
   const closed = morphology(morphology(light, sw, sh, true, rgba, 4), sw, sh, false, rgba, 4);
@@ -186,7 +199,7 @@ function restoreCompactStrokes(labels: Int16Array, lab: Float32Array, rgba: Uint
     const background = ring.map(median); let coherent = 0;
     for (let i = 0; i < ring[0].length; i++) if ((ring[0][i] - background[0]) ** 2 + (ring[1][i] - background[1]) ** 2 + (ring[2][i] - background[2]) ** 2 < 100) coherent++;
     if (coherent / ring[0].length < .83) continue;
-    const ink = [0, 1, 2].map(d => median(members.map(p => lab[p * 3 + d]))), amount = .3 + .2 * strength;
+    const ink = [0, 1, 2].map(d => median(members.map(p => lab[p * 3 + d]))), amount = .3 + .2 * strength + .2 * clarity;
     if (background[0] - ink[0] < 9) continue;
     const target = ink.map((v, d) => v * amount + background[d] * (1 - amount));
     let color = -1, error = Infinity;
@@ -217,7 +230,7 @@ function restoreCompactStrokes(labels: Int16Array, lab: Float32Array, rgba: Uint
 
 // Landmarks propose ROIs; the original image must independently support each
 // highlight/stroke. No generic eyes/mouth sprites are stamped onto the image.
-function refineFeatures(labels: Int16Array, raw: Float32Array, sw: number, sh: number, width: number, height: number, palette: RGB[], faces: SemanticFace[], strength: number) {
+function refineFeatures(labels: Int16Array, raw: Float32Array, sw: number, sh: number, width: number, height: number, palette: RGB[], faces: SemanticFace[], strength: number, clarity: number) {
   const put = (x: number, y: number, color: number) => { if (x >= 0 && x < width && y >= 0 && y < height && labels[y * width + x] >= 0) labels[y * width + x] = color; };
   const median = (values: number[]) => values.sort((a, b) => a - b)[Math.floor(values.length / 2)];
   for (const face of faces) {
@@ -268,7 +281,7 @@ function refineFeatures(labels: Int16Array, raw: Float32Array, sw: number, sh: n
       if (maximum > 8 && total && best >= 0) { path.push([x, ySum / total]); for (let d = 0; d < 3; d++) inks[d].push(raw[best * 3 + d]); }
     }
     if (path.length < span * .35 || inkCount / ((x1 - x0 + 1) * (y1 - y0 + 1)) > .35) continue;
-    const amount = .3 + .2 * strength, color = nearest(inks.map((a, d) => median(a) * amount + background[d] * (1 - amount)), 0, palette), base = nearest(background, 0, palette);
+    const amount = .3 + .2 * strength + clarity * .4, color = nearest(inks.map((a, d) => median(a) * amount + background[d] * (1 - amount)), 0, palette), base = nearest(background, 0, palette);
     const length = Math.max(1, Math.round(span / sw * width));
     const centerX = path.reduce((sum, p) => sum + p[0], 0) / path.length / sw * width, meanY = path.reduce((sum, p) => sum + p[1], 0) / path.length;
     const gx = Math.round(centerX - (length - 1) / 2 - .5), gy = Math.round(meanY / sh * height - .5);
