@@ -6,6 +6,7 @@ import { resultCanvas } from '../lib/image';
 export function useThumbnails(source: PixelSource | undefined, method: Settings['method'], transitionRetention: number, regionCleanup: number) {
   const [thumbs, setThumbs] = useState<Record<string, string>>({});
   useEffect(() => {
+    setThumbs({});
     if (!source) return;
     let worker: Worker | null = null;
     const timer = setTimeout(() => {

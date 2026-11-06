@@ -5,7 +5,9 @@ export function usePixelEngine(source: PixelSource | undefined, settings: Settin
   const worker = useRef<Worker | null>(null), previousSource = useRef<PixelSource | undefined>(undefined);
   const sequence = useRef(0), [result, setResult] = useState<PixelResult | null>(null);
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
+  const hasSource = !!source;
   useEffect(() => {
+    if (!hasSource) return;
     const instance = new Worker(new URL('../engine/pixel.worker.ts', import.meta.url), { type: 'module' });
     worker.current = instance; previousSource.current = undefined;
     instance.onmessage = (event: MessageEvent<WorkerResponse>) => {
@@ -16,10 +18,10 @@ export function usePixelEngine(source: PixelSource | undefined, settings: Settin
     };
     instance.onerror = () => { setBusy(false); setError('图像处理线程异常，请重新打开应用'); };
     return () => { instance.terminate(); worker.current = null; };
-  }, []);
+  }, [hasSource]);
   useEffect(() => {
     const id = ++sequence.current;
-    if (!source) { setResult(null); setBusy(false); return; }
+    if (!source) { setResult(null); setBusy(false); setError(''); return; }
     setBusy(true); setError('');
     const timeout = setTimeout(() => {
       const nextSource = previousSource.current !== source ? source : undefined;

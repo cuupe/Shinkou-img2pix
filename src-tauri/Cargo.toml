@@ -1,6 +1,6 @@
 [package]
 name = "shinkou-pixel"
-version = "0.10.1"
+version = "1.0.0"
 description = "Local-first image to pixel art studio"
 authors = ["Shinkou"]
 edition = "2021"

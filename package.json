@@ -1,7 +1,7 @@
 {
   "name": "shinkou-img2pix",
   "private": true,
-  "version": "0.10.1",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "postinstall": "node scripts/prepare-ort.mjs",

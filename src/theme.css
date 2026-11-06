@@ -1,0 +1,56 @@
+/* All application chrome uses semantic tokens. Artwork colors are never themed. */
+:root {
+  color-scheme: dark;
+  --bg: #16181c;
+  --header: #191c20;
+  --workspace: #171a1f;
+  --panel: #1d2025;
+  --surface: #252930;
+  --hover: #30363e;
+  --line: #323740;
+  --control-line: #4a525e;
+  --text: #e9edf2;
+  --secondary: #c0c7d1;
+  --muted: #a0a9b6;
+  --subtle: #87929f;
+  --track: #505966;
+  --checker: #1b1f25;
+  --checker-alt: #20252b;
+  --error: #ffb4ad;
+  --shadow: #0005;
+  --accent: #c4ed91;
+  --accent-text: #202b17;
+  --accent-soft: color-mix(in srgb, var(--accent) 12%, var(--panel));
+  --accent-hover: color-mix(in srgb, var(--accent) 88%, white);
+}
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f6f7f9;
+  --header: #fff;
+  --workspace: #f2f4f7;
+  --panel: #fff;
+  --surface: #f1f3f6;
+  --hover: #e6eaf0;
+  --line: #dde2e9;
+  --control-line: #bdc6d2;
+  --text: #202733;
+  --secondary: #424e5f;
+  --muted: #5c6879;
+  --subtle: #667487;
+  --track: #c6ced8;
+  --checker: #edf0f4;
+  --checker-alt: #e5e9ef;
+  --error: #b52c35;
+  --shadow: #182a421a;
+  --accent: #426d25;
+  --accent-text: #fff;
+  --accent-hover: color-mix(in srgb, var(--accent) 88%, black);
+}
+:root[data-accent='blue'] { --accent: #a8caff; --accent-text: #162b4d; }
+:root[data-accent='violet'] { --accent: #d0b6ff; --accent-text: #312046; }
+:root[data-theme='light'][data-accent='blue'] { --accent: #285bbb; --accent-text: #fff; }
+:root[data-theme='light'][data-accent='violet'] { --accent: #7544bd; --accent-text: #fff; }
+:root[data-canvas='solid'] .canvas-viewport { background-image: none; }
+:root[data-motion='reduce'] *, :root[data-motion='reduce'] *::before, :root[data-motion='reduce'] *::after {
+  animation: none !important; transition: none !important; scroll-behavior: auto !important;
+}

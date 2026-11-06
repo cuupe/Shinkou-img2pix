@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { Columns2, Grid2X2, Image, Maximize, Minus, Plus, Upload, ScanLine, Pipette, Copy, BrainCircuit } from 'lucide-react';
+import { ArrowRight, BookOpen, Columns2, Grid2X2, Image, Maximize, Minus, Plus, Upload, ScanLine, Pipette, Copy, BrainCircuit, X } from 'lucide-react';
 import type { PixelResult } from '../engine/types';
 import type { SourceImage } from '../lib/image';
 import { resultCanvas } from '../lib/image';
 import { samplePixel, samplePixelAtPoint } from '../lib/pixel-picker';
 import { toHex } from '../engine/palettes';
 type Mode = 'pixel' | 'original' | 'compare' | 'ai';
-interface Props { source: SourceImage | null; result: PixelResult | null; busy: boolean; onImport: () => void; notify: (message: string) => void }
-export default function Preview({ source, result, busy, onImport, notify }: Props) {
+interface Props { source: SourceImage | null; result: PixelResult | null; busy: boolean; onImport: () => void; onExample: () => void; onGuide: () => void; onClear: () => void; notify: (message: string) => void }
+export default function Preview({ source, result, busy, onImport, onExample, onGuide, onClear, notify }: Props) {
   const [mode, setMode] = useState<Mode>('pixel'), [zoom, setZoom] = useState(1), [grid, setGrid] = useState(false), [split, setSplit] = useState(50);
   const [bounds, setBounds] = useState({ width: 800, height: 650 });
   const [picking, setPicking] = useState(false), [selection, setSelection] = useState<{ image: PixelResult; x: number; y: number } | null>(null);
@@ -36,7 +36,7 @@ export default function Preview({ source, result, busy, onImport, notify }: Prop
     c.width = aiPreview.width; c.height = aiPreview.height;
     c.getContext('2d')!.putImageData(new ImageData(new Uint8ClampedArray(aiPreview.data), aiPreview.width, aiPreview.height), 0, 0);
   }, [aiPreview]);
-  useEffect(() => { setZoom(1); setSplit(50); }, [source]);
+  useEffect(() => { setZoom(1); setSplit(50); setMode('pixel'); setPicking(false); setSelection(null); }, [source]);
   const w = result?.width ?? 160, h = result?.height ?? 120;
   const fit = Math.max(0.1, Math.min((bounds.width - 50) / w, (bounds.height - 74) / h));
   const scale = fit * zoom, displayWidth = Math.round(w * scale), displayHeight = Math.round(h * scale);
@@ -44,9 +44,9 @@ export default function Preview({ source, result, busy, onImport, notify }: Prop
   return <main className="workspace">
     <div className="canvas-toolbar"><div className="segmented view-tabs" aria-label="预览模式">{([
       ['pixel', '像素预览', Grid2X2], ['original', '原图', Image], ['compare', '对比', Columns2],
-    ] as const).map(([id, label, Icon]) => <button key={id} aria-pressed={activeMode === id} className={activeMode === id ? 'selected' : ''} onClick={() => { setMode(id); setPicking(false); }}><Icon size={15} /><span>{label}</span></button>)}</div><div className="zoom-controls">
+    ] as const).map(([id, label, Icon]) => <button key={id} disabled={!source} aria-pressed={activeMode === id} className={activeMode === id ? 'selected' : ''} onClick={() => { setMode(id); setPicking(false); }}><Icon size={15} /><span>{label}</span></button>)}</div><div className="zoom-controls">
     {aiPreview && <button className={`icon-button ${activeMode === 'ai' ? 'toggled' : ''}`} aria-label="AI 线稿预览" title="查看神经网络预测的边缘" aria-pressed={activeMode === 'ai'} disabled={busy} onClick={() => { setMode(activeMode === 'ai' ? 'pixel' : 'ai'); setPicking(false); }}><BrainCircuit size={16} /></button>}
-    <button className={`icon-button picker-button ${picking ? 'toggled' : ''}`} aria-label="网格取色" title="网格取色 · 读取结果中的真实色值" aria-pressed={picking} disabled={!result || busy} onClick={() => { setPicking(v => !v); setMode('pixel'); setGrid(true); }}><Pipette size={16} /></button><button className={`icon-button grid-button ${grid ? 'toggled' : ''}`} aria-label="像素网格" title="像素网格" aria-pressed={grid} onClick={() => setGrid(v => !v)}><Grid2X2 size={16} /></button><span className="toolbar-divider" /><button className="icon-button" aria-label="缩小" onClick={() => changeZoom(1 / 1.25)}><Minus size={16} /></button><button className="zoom-value" title="适应画布" onClick={() => setZoom(1)}>{Math.round(scale * 100)}%</button><button className="icon-button" aria-label="放大" onClick={() => changeZoom(1.25)}><Plus size={16} /></button><button className="icon-button" title="适应画布" aria-label="适应画布" onClick={() => setZoom(1)}><Maximize size={15} /></button></div></div>
+    <button className={`icon-button picker-button ${picking ? 'toggled' : ''}`} aria-label="网格取色" title="网格取色 · 读取结果中的真实色值" aria-pressed={picking} disabled={!result || busy} onClick={() => { setPicking(v => !v); setMode('pixel'); setGrid(true); }}><Pipette size={16} /></button><button className={`icon-button grid-button ${grid ? 'toggled' : ''}`} aria-label="像素网格" title="像素网格" aria-pressed={grid} disabled={!result} onClick={() => setGrid(v => !v)}><Grid2X2 size={16} /></button><span className="toolbar-divider" /><button className="icon-button" aria-label="缩小" disabled={!result} onClick={() => changeZoom(1 / 1.25)}><Minus size={16} /></button><button className="zoom-value" title="适应画布" disabled={!result} onClick={() => setZoom(1)}>{result ? Math.round(scale * 100) : 100}%</button><button className="icon-button" aria-label="放大" disabled={!result} onClick={() => changeZoom(1.25)}><Plus size={16} /></button><button className="icon-button" title="适应画布" aria-label="适应画布" disabled={!result} onClick={() => setZoom(1)}><Maximize size={15} /></button></div></div>
     <div ref={viewport} className={`canvas-viewport ${zoom > 1 ? 'pannable' : ''} ${picking ? 'picking' : ''}`} onWheel={e => { if (e.ctrlKey || e.metaKey) { e.preventDefault(); changeZoom(e.deltaY < 0 ? 1.1 : 1 / 1.1); } }} onPointerDown={e => {
       if (zoom <= 1 || (picking && !e.shiftKey) || (e.target as HTMLElement).closest('input,button')) return;
       const el = viewport.current!; pan.current = { x: e.clientX, y: e.clientY, left: el.scrollLeft, top: el.scrollTop }; el.setPointerCapture(e.pointerId);
@@ -69,11 +69,11 @@ export default function Preview({ source, result, busy, onImport, notify }: Prop
         {grid && activeMode !== 'original' && activeMode !== 'ai' && scale >= 4 && <div className="pixel-grid" style={{ backgroundSize: `${displayWidth / w}px ${displayHeight / h}px`, clipPath: activeMode === 'compare' ? `inset(0 0 0 ${split}%)` : undefined }} />}
         {picking && picked && <div className="picked-cell" aria-hidden="true" style={{ left: `${picked.x / w * 100}%`, top: `${picked.y / h * 100}%`, width: `${100 / w}%`, height: `${100 / h}%` }} />}
         {mode === 'compare' && <><span className="image-label label-before">原图</span><span className="image-label label-after">像素画</span><div className="comparison-line" style={{ left: `${split}%` }}><span><Columns2 size={15} /></span></div><input className="comparison-slider" aria-label="原图对比分界线" type="range" min={0} max={100} value={split} onChange={e => setSplit(+e.target.value)} /></>}
-      </div></div> : <button className="empty-state" onClick={onImport}><Upload size={30} /><strong>从一张图片开始</strong><span>拖入图片，或点击导入</span><small>PNG · JPG · WebP · BMP · GIF · AVIF</small></button>}
+      </div></div> : <div className="empty-state"><div className="empty-content"><span className="empty-icon" aria-hidden="true"><Upload size={30} strokeWidth={1.5} /></span><h2>{busy ? '正在打开图片…' : '从一张图片开始'}</h2><p>拖入图片，或选择本地文件</p><button className="button primary" onClick={onImport} disabled={busy}><Image size={16} />导入图片</button><button className="text-button" onClick={onExample} disabled={busy}>打开示例</button><small>PNG / JPG / WebP / BMP / GIF / AVIF · 最大 60 MB</small></div><div className="empty-guide"><div className="empty-steps"><span>导入图片</span><ArrowRight size={14} /><span>调整像素</span><ArrowRight size={14} /><span>导出作品</span></div><button className="text-button" onClick={onGuide}><BookOpen size={15} />使用指南</button></div></div>}
       {busy && <div className="processing-badge"><span className="spinner" />正在细化像素…</div>}
     </div>
     {picking && <div className="color-inspector" aria-live="polite">{picked ? <><span className={`picked-swatch ${picked.alpha ? '' : 'transparent-swatch'}`} style={picked.alpha ? { backgroundColor: toHex(picked.color) } : undefined} /><div className="picked-values"><strong>{picked.alpha ? toHex(picked.color) : '透明'}</strong><span>{picked.alpha ? `RGB ${picked.color.join(', ')}` : 'Alpha 0'} · 列 {picked.x + 1} · 行 {picked.y + 1}</span></div><div className="picker-actions"><button className="button" disabled={!picked.alpha} onClick={() => void copyColor('hex')}><Copy size={12} />复制 HEX</button><button className="button" onClick={() => void copyColor('rgb')}>复制 RGBA</button></div></> : <span>点击结果中的像素格，读取颜色与位置</span>}<small id="picker-hint">方向键移动 · Enter 复制 · Shift 拖动平移 · Esc 退出</small></div>}
     <div className="canvas-info"><div><ScanLine size={14} /><strong>{result ? `${result.width} × ${result.height}` : '—'}</strong><span>像素</span><i />{result?.palette.length ?? 0} 色</div><span className="canvas-hint">{mode === 'compare' ? '拖动分界线，对比细节' : zoom > 1 ? '拖动画布平移 · Ctrl + 滚轮缩放' : 'Ctrl + 滚轮缩放 · 拖入图片开始创作'}</span></div>
-    {source && <div className="source-info"><Image size={12} /><span title={source.name}>{source.name}</span><span>{source.originalWidth} × {source.originalHeight}{source.reduced ? ' · 已优化工作分辨率' : ''}</span><button onClick={onImport}>替换图片</button></div>}
+    {source && <div className="source-info"><Image size={12} /><span title={source.name}>{source.name}</span><span>{source.originalWidth} × {source.originalHeight}{source.reduced ? ' · 已优化工作分辨率' : ''}</span><button onClick={onImport} disabled={busy}>替换图片</button><button className="icon-button" onClick={onClear} aria-label="移除图片" title="移除图片，返回空白工作台"><X size={13} /></button></div>}
   </main>;
 }
