@@ -9,6 +9,7 @@ import { decodeImage, exportImage, resultCanvas, saveBlob } from '../lib/image';
 import type { SourceImage } from '../lib/image';
 import { usePixelEngine } from '../hooks/usePixelEngine';
 import { PALETTES } from '../engine/palettes';
+import { prepareRedrawColors } from '../engine/redraw-colors';
 
 interface Candidate { image: SourceImage; seed: number; prompt: string; blob: Blob; seconds: number; size: number; profile: RedrawProfile }
 interface Props { source: SourceImage; baseline: PixelResult | null; settings: Settings; onClose: () => void; onApply: (result: PixelResult, patch: Partial<Settings>, seed: number, seconds: number) => void }
@@ -28,6 +29,7 @@ export default function RedrawDialog({ source, baseline, settings, onClose, onAp
   const [colors, setColors] = useState(settings.colors), [instruction, setInstruction] = useState('');
   const [seedInput, setSeedInput] = useState('');
   const [profile, setProfile] = useState<RedrawProfile>('compact');
+  const [colorRetention, setColorRetention] = useState(100);
   const [candidates, setCandidates] = useState<Candidate[]>([]), [selected, setSelected] = useState(0);
   const [phaseX, setPhaseX] = useState(0), [phaseY, setPhaseY] = useState(0);
   const [status, setStatus] = useState('正在检查本地服务…'), [error, setError] = useState(''), [busy, setBusy] = useState(false);
@@ -42,7 +44,9 @@ export default function RedrawDialog({ source, baseline, settings, onClose, onAp
   const baselineSettings = useMemo(() => ({ ...settings, size, backend: 'cpu' as const }), [settings, size]);
   const comparison = usePixelEngine(baselineMatches ? undefined : source.pixels, baselineSettings);
   const matchingBaseline = baselineMatches ? baseline : comparison.result?.width === target.width && comparison.result?.height === target.height && !comparison.busy ? comparison.result : null;
-  const result = useMemo(() => candidate ? normalizeRedraw(candidate.image.pixels, { size, colors, palette: settings.palette, phaseX, phaseY, target }) : null, [candidate, size, colors, settings.palette, phaseX, phaseY, target.width, target.height]);
+  const hasCandidates = candidates.length > 0;
+  const sourceColors = useMemo(() => hasCandidates && settings.palette === 'adaptive' ? prepareRedrawColors(source.pixels, colors) : undefined, [hasCandidates, source.pixels, colors, settings.palette]);
+  const result = useMemo(() => candidate ? normalizeRedraw(candidate.image.pixels, { size, colors, palette: settings.palette, phaseX, phaseY, target, sourceColors, colorRetention }) : null, [candidate, size, colors, settings.palette, phaseX, phaseY, target.width, target.height, sourceColors, colorRetention]);
   useEffect(() => { candidateRef.current = candidates; }, [candidates]);
   useEffect(() => {
     if (!busy) return;
@@ -102,6 +106,8 @@ export default function RedrawDialog({ source, baseline, settings, onClose, onAp
         <p className="help-text">{generationSize ? `本次生成 ${generationSize.width} × ${generationSize.height} 候选，再输出 ${target.width} × ${target.height} 网格。原图参考使用独立的较清晰输入。` : 'AI 重绘暂支持宽高比在 1:4 到 4:1 之间的图片。'}</p>
         <label className="field">目标长边<select aria-label="重绘像素尺寸" value={size} disabled={busy} onChange={e => setSize(+e.target.value)}>{[16, 24, 32, 48, 64].map(n => <option key={n} value={n}>{n} px</option>)}</select></label>
         <label className="field">颜色上限<select aria-label="重绘颜色数量" value={colors} disabled={busy || settings.palette !== 'adaptive'} onChange={e => setColors(+e.target.value)}>{[4, 8, 16, 24, 32, 48, 64, 128, 256].map(n => <option key={n} value={n}>{n} 色</option>)}</select></label>
+        <label className="slider-control"><span>原图配色保留<output>{colorRetention}%</output></span><input aria-label="原图配色保留" type="range" min={0} max={100} value={colorRetention} disabled={settings.palette !== 'adaptive'} onChange={e => setColorRetention(+e.target.value)} style={{ '--fill': `${colorRetention}%` } as React.CSSProperties} /></label>
+        <p className="help-text">{settings.palette === 'adaptive' ? '100：最终网格使用原图提取的色板；0：保留模型配色。调整立即生效，无需重新生成。此设置只约束颜色，不补回缺失五官。' : '当前使用固定风格色板，原图配色约束不参与处理。'}</p>
         <p className="help-text">沿用当前色板风格。模型会参考原图；生成完成后再约束为真实 {target.width} × {target.height} 网格。</p>
         <label className="field">补充要求 <span className="field-hint">可选</span><textarea aria-label="重绘补充要求" maxLength={1600} value={instruction} disabled={busy} onChange={e => setInstruction(e.target.value)} placeholder="例如：保留蓝色眼睛，简化头发，不要黑色粗描边。" /></label>
         <label className="field">随机种子 <span className="field-hint">留空随机</span><input className="redraw-seed" aria-label="重绘随机种子" type="number" min={0} max={4294967295} step={1} value={seedInput} disabled={busy} onChange={e => setSeedInput(e.target.value)} /></label>
@@ -115,7 +121,7 @@ export default function RedrawDialog({ source, baseline, settings, onClose, onAp
         {candidate && <><div className="redraw-candidates" aria-label="重绘候选">{candidates.map((c, index) => <button key={c.seed} className={selected === index ? 'selected' : ''} onClick={() => { setSelected(index); setPhaseX(0); setPhaseY(0); }} aria-pressed={selected === index}><img src={c.image.url} alt={`重绘候选 ${index + 1}`} /><span>候选 {index + 1}</span></button>)}</div>
           <p className="help-text">候选 · {candidate.profile === 'compact' ? '紧凑重绘' : '大图重绘'} · {candidate.image.originalWidth} × {candidate.image.originalHeight} 原图 · 按 {candidate.size} px 提示生成 · 种子 {candidate.seed} · {Math.round(candidate.seconds)} 秒。{size !== candidate.size && '当前网格尺寸与生成提示不同，建议重新生成。'}{profile !== candidate.profile && '生成方式的变化在下一次生成时生效。'}大图不保证严格对齐，微调取样位置可检查眼睛和嘴是否被漏掉。</p>
           <div className="redraw-phases">{([['横向取样偏移', phaseX, setPhaseX], ['纵向取样偏移', phaseY, setPhaseY]] as const).map(([label, value, change]) => <label key={label}>{label}<output>{Math.round(value * 100)}%</output><input aria-label={label} type="range" min={-45} max={45} value={Math.round(value * 100)} onChange={e => change(+e.target.value / 100)} /></label>)}</div>
-          <div className="redraw-candidate-actions"><button className="button" onClick={() => void saveBlob(candidate.blob, `shinkou-redraw-${candidate.seed}-raw.png`, 'png').catch(e => setError(String(e)))}><Download size={14} />保存生成原图</button><button className="button" disabled={!result} onClick={() => result && void exportImage(result, `shinkou-redraw-${candidate.seed}`, 1, 'png').catch(e => setError(String(e)))}>导出原尺寸候选</button><button className="button" onClick={() => void saveBlob(new Blob([JSON.stringify({ model: 'FLUX.2 Klein 4B FP8', profile: candidate.profile, generated: { width: candidate.image.originalWidth, height: candidate.image.originalHeight }, seed: candidate.seed, prompt: candidate.prompt, grid: { size, width: target.width, height: target.height, colors, palette: settings.palette, phaseX, phaseY } }, null, 2)], { type: 'application/json' }), `shinkou-redraw-${candidate.seed}.json`, 'json').catch(e => setError(String(e)))}>保存重绘参数</button></div>
+          <p className="help-text">最终网格包含当前配色约束；模型原图保留原始生成颜色。原图配色约束只处理色调，无法恢复模型遗漏的结构。</p><div className="redraw-candidate-actions"><button className="button" onClick={() => void saveBlob(candidate.blob, `shinkou-redraw-${candidate.seed}-raw.png`, 'png').catch(e => setError(String(e)))}><Download size={14} />保存模型原图</button><button className="button" disabled={!result} onClick={() => result && void exportImage(result, `shinkou-redraw-${candidate.seed}`, 1, 'png').catch(e => setError(String(e)))}>导出原尺寸候选</button><button className="button" onClick={() => void saveBlob(new Blob([JSON.stringify({ model: 'FLUX.2 Klein 4B FP8', profile: candidate.profile, generated: { width: candidate.image.originalWidth, height: candidate.image.originalHeight }, seed: candidate.seed, prompt: candidate.prompt, grid: { size, width: target.width, height: target.height, colors, palette: settings.palette, phaseX, phaseY, colorRetention: settings.palette === 'adaptive' ? colorRetention : 0 }, referencePalette: sourceColors?.palette }, null, 2)], { type: 'application/json' }), `shinkou-redraw-${candidate.seed}.json`, 'json').catch(e => setError(String(e)))}>保存重绘参数</button></div>
         </>}
       </div></div>
       <footer><span>原图始终保留。应用后调整主界面参数，会返回算法处理。</span><button className="button" onClick={onClose}>返回编辑器</button><button className="button primary" disabled={!result || busy} onClick={() => result && candidate && onApply(result, { size, colors }, candidate.seed, candidate.seconds)}>使用此候选</button></footer>

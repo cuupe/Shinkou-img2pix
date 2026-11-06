@@ -1,0 +1,189 @@
+{
+  "version": "0.10.1",
+  "source": "public/illustration.png",
+  "sourceSha256": "8b74e23ae5b3c491d55018984df16deea4fbea5d47dd6b2ec6fda32035964bf8",
+  "palette": [
+    [
+      225,
+      214,
+      210
+    ],
+    [
+      193,
+      194,
+      190
+    ],
+    [
+      195,
+      172,
+      162
+    ],
+    [
+      156,
+      153,
+      152
+    ],
+    [
+      157,
+      121,
+      113
+    ],
+    [
+      219,
+      207,
+      201
+    ],
+    [
+      185,
+      89,
+      99
+    ],
+    [
+      217,
+      110,
+      116
+    ],
+    [
+      229,
+      111,
+      115
+    ],
+    [
+      238,
+      123,
+      128
+    ],
+    [
+      150,
+      96,
+      88
+    ],
+    [
+      201,
+      102,
+      108
+    ],
+    [
+      124,
+      64,
+      71
+    ],
+    [
+      154,
+      70,
+      82
+    ],
+    [
+      172,
+      78,
+      91
+    ],
+    [
+      240,
+      125,
+      129
+    ],
+    [
+      78,
+      30,
+      50
+    ],
+    [
+      128,
+      90,
+      88
+    ],
+    [
+      238,
+      148,
+      146
+    ],
+    [
+      235,
+      168,
+      143
+    ],
+    [
+      241,
+      181,
+      171
+    ],
+    [
+      192,
+      145,
+      116
+    ],
+    [
+      244,
+      191,
+      119
+    ],
+    [
+      233,
+      196,
+      174
+    ],
+    [
+      250,
+      207,
+      183
+    ],
+    [
+      230,
+      174,
+      113
+    ],
+    [
+      77,
+      60,
+      78
+    ],
+    [
+      80,
+      83,
+      108
+    ],
+    [
+      247,
+      225,
+      203
+    ],
+    [
+      101,
+      116,
+      151
+    ],
+    [
+      105,
+      121,
+      155
+    ],
+    [
+      95,
+      102,
+      131
+    ]
+  ],
+  "outputs": [
+    {
+      "size": 32,
+      "raw": "docs/images/redraw-generated-128.png",
+      "rawSha256": "456d10a3fa07371f8b15770fcefe5ae6a4e4a9521c0c59c40f29c07add574f3d",
+      "before": "docs/images/redraw-grid-32.png",
+      "after": "docs/images/redraw-source-colors-32.png",
+      "comparison": "docs/images/redraw-colors-32.png",
+      "colors": 19,
+      "colorRetention": 100
+    },
+    {
+      "size": 16,
+      "raw": "docs/images/redraw-generated-64.png",
+      "rawSha256": "a6a73a00de75f446aaaf1ea4db525a5c6ada442b13c143f2ec8937d71a9b10e5",
+      "before": "docs/images/redraw-grid-16.png",
+      "after": "docs/images/redraw-source-colors-16.png",
+      "comparison": "docs/images/redraw-colors-16.png",
+      "colors": 18,
+      "colorRetention": 100
+    }
+  ]
+}

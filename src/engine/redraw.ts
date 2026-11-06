@@ -1,12 +1,14 @@
 import { dimensions, pixelate } from './pixelate';
 import { DEFAULT_SETTINGS } from './types';
 import type { PaletteId, PixelResult, PixelSource } from './types';
+import { retainRedrawColors } from './redraw-colors';
+import type { RedrawColorReference } from './redraw-colors';
 
-export interface RedrawGrid { size: number; colors: number; palette: PaletteId; phaseX: number; phaseY: number; target?: { width: number; height: number } }
+export interface RedrawGrid { size: number; colors: number; palette: PaletteId; phaseX: number; phaseY: number; target?: { width: number; height: number }; sourceColors?: RedrawColorReference; colorRetention?: number }
 export type RedrawProfile = 'compact' | 'faithful';
 
-/** Generation owns the semantic layout. This stage only chooses grid samples and
- * bounds the palette; source-outline reconstruction must not run over a redraw. */
+/** Generation owns the semantic layout. This stage chooses grid samples, bounds
+ * the palette and optionally restores source colors without adding source lines. */
 export function normalizeRedraw(source: PixelSource, options: RedrawGrid): PixelResult {
   if (!source.width || !source.height || source.data.length !== source.width * source.height * 4) throw new Error('候选图像数据无效');
   const size = Math.max(16, Math.min(64, Math.round(options.size)));
@@ -19,10 +21,11 @@ export function normalizeRedraw(source: PixelSource, options: RedrawGrid): Pixel
     const sy = Math.min(source.height - 1, Math.floor((y + 0.5 + phase(options.phaseY)) * source.height / height));
     data.set(source.data.subarray((sy * source.width + sx) * 4, (sy * source.width + sx) * 4 + 4), (y * width + x) * 4);
   }
-  return pixelate({ width, height, data }, {
+  const result = pixelate({ width, height, data }, {
     ...DEFAULT_SETTINGS, backend: 'cpu', method: 'sample', size, colors: options.colors, palette: options.palette,
     detail: false, dither: 'none', transitionRetention: 100,
   });
+  return options.palette === 'adaptive' && options.sourceColors ? retainRedrawColors(result, options.sourceColors, options.colorRetention ?? 100, options.colors) : result;
 }
 
 export function redrawPrompt(width: number, height: number, colors: number, instruction: string) {
