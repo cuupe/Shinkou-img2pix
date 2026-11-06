@@ -1,0 +1,31 @@
+{
+  "model": "FLUX.2 Klein 4B FP8",
+  "profile": "compact",
+  "generated": {
+    "width": 128,
+    "height": 128
+  },
+  "seed": 314159,
+  "prompt": "pixel art sprite, game portrait. Reimagine the reference for a 32 by 32 pixel grid. Preserve the same character identity, pose, composition, hairstyle, clothing, distinctive accessories and original eye colors. Redesign the details to fit this very small grid, rather than simply tracing all the original lines. Use a few large connected color clusters and approximately 32 colors. Preserve the restrained colors of the reference. Keep readable eyes and a small clearly visible mouth when present; preserve the original expression. Simplify hair or fur into a few broad shapes. Use selective colored contours only where needed, omit lines that would crowd the face. No unnecessary pure black outlines, no tiny scattered marks, no elaborate shading, no gradient, no antialiasing, no text, no drawn grid, no borders. Keep the reference aspect ratio. ",
+  "grid": {
+    "size": 32,
+    "width": 32,
+    "height": 32,
+    "colors": 32,
+    "palette": "adaptive",
+    "phaseX": 0,
+    "phaseY": 0
+  },
+  "source": {
+    "path": "public/illustration.png",
+    "sha256": "8b74e23ae5b3c491d55018984df16deea4fbea5d47dd6b2ec6fda32035964bf8"
+  },
+  "recorded": {
+    "date": "2026-11-06",
+    "generated": "docs/images/redraw-generated-128.png",
+    "output": "docs/images/redraw-grid-32.png",
+    "actualColors": 32,
+    "phaseX": 0,
+    "phaseY": 0
+  }
+}

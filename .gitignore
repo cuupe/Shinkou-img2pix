@@ -10,3 +10,4 @@ release/
 *.tsbuildinfo
 .cache/
 public/ort/
+__pycache__/
